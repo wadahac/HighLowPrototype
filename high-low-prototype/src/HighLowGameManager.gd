@@ -35,12 +35,19 @@ func _ready() -> void:
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
 	
 	# Initialize game state
-	reset_game()
+	start_new_match()
+	
+	# Manually call initial label text draw update so the first card is visible immediately
+	_update_base_card_ui()
 
-func reset_game() -> void:
+func start_new_match() -> void:
 	player_current_health = player_max_health
 	enemy_current_health = enemy_max_health
 	current_combo_damage = 0
+	
+	# Explicitly invoke the setup updates right after setting base variables
+	health_changed.emit(player_current_health, enemy_current_health)
+	combo_updated.emit(current_combo_damage)
 	
 	rebuild_deck()
 	current_base_value = draw_card()
@@ -49,9 +56,6 @@ func reset_game() -> void:
 	lower_button.disabled = false
 	cash_out_button.disabled = false
 	
-	# Emit initial states to update UI
-	health_changed.emit(player_current_health, enemy_current_health)
-	combo_updated.emit(current_combo_damage)
 	_update_base_card_ui()
 
 func rebuild_deck() -> void:
@@ -118,17 +122,17 @@ func cash_out() -> void:
 
 # 8. Helper functions to update UI labels cleanly
 func _on_health_changed(player_hp: int, enemy_hp: int) -> void:
-	health_label.text = "PLAYER HP: %d | ENTITY HP: %d" % [player_hp, enemy_hp]
+	health_label.text = "PLAYER HP: " + str(player_hp) + " | ENTITY HP: " + str(enemy_hp)
 
 func _on_combo_updated(current_combo: int) -> void:
-	combo_label.text = "STAKE: %d POINTS" % current_combo
+	combo_label.text = "CURRENT STAKE: " + str(current_combo) + " POINTS"
 
 func _update_base_card_ui() -> void:
-	base_card_label.text = "CURRENT CARD: %d" % current_base_value
+	base_card_label.text = "CARD VALUE: " + str(current_base_value)
 
 func _on_game_over(winner_name: String) -> void:
 	base_card_label.text = "GAME OVER"
-	combo_label.text = "WINNER: %s" % winner_name.to_upper()
+	combo_label.text = "WINNER: " + winner_name.to_upper()
 	higher_button.disabled = true
 	lower_button.disabled = true
 	cash_out_button.disabled = true
