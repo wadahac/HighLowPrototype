@@ -1,4 +1,4 @@
-extends Node
+extends Node2D
 
 # 1. Custom signals
 signal health_changed(player_hp: int, enemy_hp: int)
@@ -39,6 +39,8 @@ func _ready() -> void:
 	
 	# Manually call initial label text draw update so the first card is visible immediately
 	_update_base_card_ui()
+	
+	print("GAME INITALIZED SUCCESFULLY")
 
 func start_new_match() -> void:
 	player_current_health = player_max_health
