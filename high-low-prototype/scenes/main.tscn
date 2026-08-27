@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://deopnk5xm7ek2"]
+
+[node name="Main" type="Node2D" unique_id=182343160]
+
+[node name="UI_Layer" type="CanvasLayer" parent="." unique_id=1495939711]
+
+[node name="Background" type="ColorRect" parent="UI_Layer" unique_id=1932712271]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Vignette" type="TextureRect" parent="UI_Layer" unique_id=1491990849]
+offset_right = 40.0
+offset_bottom = 40.0
+metadata/_edit_use_anchors_ = true
+
+[node name="Table" type="Control" parent="UI_Layer" unique_id=1965891932]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+metadata/_edit_use_anchors_ = true
+
+[node name="BaseCardLabel" type="Label" parent="UI_Layer/Table" unique_id=1226807319]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true
+
+[node name="ComboLabel" type="Label" parent="UI_Layer/Table" unique_id=1642129600]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true
+
+[node name="HealthLabel" type="Label" parent="UI_Layer/Table" unique_id=1089129879]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true
+
+[node name="ButtonsContainer" type="HBoxContainer" parent="UI_Layer" unique_id=519503482]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -31.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="HigherButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=1822992196]
+layout_mode = 2
+text = "GUESS HIGHER"
+
+[node name="LowerButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=147399126]
+layout_mode = 2
+text = "GUESS LOWER"
+
+[node name="CashOutButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=749436423]
+layout_mode = 2
+text = "CASH OUT"
