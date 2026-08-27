@@ -1,6 +1,9 @@
 [gd_scene format=3 uid="uid://deopnk5xm7ek2"]
 
+[ext_resource type="Script" uid="uid://dtgy32ffiy1h7" path="res://src/HighLowGameManager.gd" id="1_o5qli"]
+
 [node name="Main" type="Node2D" unique_id=182343160]
+script = ExtResource("1_o5qli")
 
 [node name="UI_Layer" type="CanvasLayer" parent="." unique_id=1495939711]
 
@@ -90,3 +93,5 @@ text = "GUESS LOWER"
 [node name="CashOutButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=749436423]
 layout_mode = 2
 text = "CASH OUT"
+
+[node name="Node" type="Node" parent="." unique_id=264529255]
