@@ -19,27 +19,55 @@ metadata/_edit_use_anchors_ = true
 
 [node name="Table" type="Control" parent="UI_Layer" unique_id=1965891932]
 layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 
 [node name="BaseCardLabel" type="Label" parent="UI_Layer/Table" unique_id=1226807319]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 2.15
+anchor_top = -0.475
+anchor_right = 4.0
+anchor_bottom = -0.475
+offset_left = 24.0
+offset_top = 1.0
+offset_right = 64.0
+offset_bottom = 24.0
+text = "card number 7"
 metadata/_edit_use_anchors_ = true
 
 [node name="ComboLabel" type="Label" parent="UI_Layer/Table" unique_id=1642129600]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = -1.025
+anchor_top = -0.95
+anchor_right = 0.65
+anchor_bottom = -0.95
 offset_right = 40.0
 offset_bottom = 23.0
+text = "combo level 2"
 metadata/_edit_use_anchors_ = true
 
 [node name="HealthLabel" type="Label" parent="UI_Layer/Table" unique_id=1089129879]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = -3.95
+anchor_top = -0.075
+anchor_right = -3.375
+anchor_bottom = -0.075
 offset_right = 40.0
 offset_bottom = 23.0
+text = "health 7"
 metadata/_edit_use_anchors_ = true
 
 [node name="ButtonsContainer" type="HBoxContainer" parent="UI_Layer" unique_id=519503482]
