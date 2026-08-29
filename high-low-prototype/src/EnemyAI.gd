@@ -56,9 +56,9 @@ func take_turn(current_card_value: int) -> void:
 			optimal_choice = "lower"
 			worse_choice = "higher"
 			
-	# Determine final choice with a 20% mistake chance
+	# Determine final choice with a 35% mistake chance
 	var choice: String = optimal_choice
-	if randf() < 0.2:
+	if randf() < 0.35:
 		choice = worse_choice
 		
 	decision_made.emit(choice)

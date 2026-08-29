@@ -113,11 +113,8 @@ func _on_enemy_decision_made(choice: String) -> void:
 	
 	# If the game is still going and it remains the enemy's turn (they didn't bust)
 	if not is_player_turn and player_current_health > 0 and enemy_current_health > 0:
-		# AI decides to cash out if combo is high enough, otherwise continues guessing
-		if current_combo_damage >= 2:
-			cash_out()
-		else:
-			enemy_ai.take_turn(current_base_value)
+		# AI continues guessing based on its card-counting logic
+		enemy_ai.take_turn(current_base_value)
 
 # 6. Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -144,9 +141,9 @@ func process_guess(is_higher: bool) -> void:
 		# BUST: deduct current_combo_damage from active player's health (minimum 1 damage if combo is 0)
 		var damage: int = max(1, current_combo_damage)
 		if is_player_turn:
-			player_current_health -= damage
+			player_current_health = max(0, player_current_health - damage)
 		else:
-			enemy_current_health -= damage
+			enemy_current_health = max(0, enemy_current_health - damage)
 		current_combo_damage = 0
 		
 		# Generate and store a new random card value after damage is resolved
@@ -157,15 +154,16 @@ func process_guess(is_higher: bool) -> void:
 		_update_base_card_ui()
 		
 		if not check_game_state():
+			await get_tree().create_timer(1.2).timeout
 			switch_turn()
 
 # 7. Cash out logic
 func cash_out() -> void:
 	if current_combo_damage > 0:
 		if is_player_turn:
-			enemy_current_health -= current_combo_damage
+			enemy_current_health = max(0, enemy_current_health - current_combo_damage)
 		else:
-			player_current_health -= current_combo_damage
+			player_current_health = max(0, player_current_health - current_combo_damage)
 		current_combo_damage = 0
 		
 		# Generate and store a new random card value after damage is resolved
@@ -178,6 +176,7 @@ func cash_out() -> void:
 		_update_base_card_ui()
 		
 		if not check_game_state():
+			await get_tree().create_timer(1.2).timeout
 			switch_turn()
 
 func switch_turn() -> void:
