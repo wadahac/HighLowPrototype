@@ -18,9 +18,14 @@ func reset_deck_memory() -> void:
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
 
-func take_turn(current_card_value: int) -> void:
+func take_turn(current_card_value: int, current_stake: int, player_hp: int) -> void:
 	# Random delay between 1.0 and 5.0 seconds
 	await get_tree().create_timer(randf_range(1.0, 5.0)).timeout
+	
+	# Lethal Cash-Out Check
+	if current_stake >= player_hp and current_stake > 0:
+		decision_made.emit("cash_out")
+		return
 	
 	# Calculate remaining cards in the deck
 	var counts = {}

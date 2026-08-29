@@ -72,7 +72,7 @@ func start_new_match() -> void:
 	rebuild_deck()
 	current_base_value = draw_card()
 	
-	_enable_player_controls(true)
+	set_player_controls_enabled(true)
 	_update_base_card_ui()
 
 func restart_match() -> void:
@@ -96,14 +96,17 @@ func draw_card() -> int:
 # Button handlers
 func _on_higher_pressed() -> void:
 	if is_player_turn:
+		set_player_controls_enabled(false)
 		process_guess(true)
 
 func _on_lower_pressed() -> void:
 	if is_player_turn:
+		set_player_controls_enabled(false)
 		process_guess(false)
 
 func _on_cash_out_pressed() -> void:
 	if is_player_turn:
+		set_player_controls_enabled(false)
 		cash_out()
 
 # AI Decision Handler
@@ -111,12 +114,15 @@ func _on_enemy_decision_made(choice: String) -> void:
 	if is_player_turn:
 		return
 	
-	process_guess(choice == "higher")
+	if choice == "cash_out":
+		cash_out()
+	else:
+		process_guess(choice == "higher")
 	
-	# If the game is still going and it remains the enemy's turn (they didn't bust)
+	# If the game is still going and it remains the enemy's turn (they didn't bust/cash out)
 	if not is_player_turn and player_current_health > 0 and enemy_current_health > 0:
 		# AI continues guessing based on its card-counting logic
-		enemy_ai.take_turn(current_base_value)
+		enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health)
 
 # 6. Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -189,13 +195,13 @@ func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	if is_player_turn:
-		_enable_player_controls(true)
+		set_player_controls_enabled(true)
 	else:
-		_enable_player_controls(false)
+		set_player_controls_enabled(false)
 		if enemy_ai:
-			enemy_ai.take_turn(current_base_value)
+			enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health)
 
-func _enable_player_controls(enabled: bool) -> void:
+func set_player_controls_enabled(enabled: bool) -> void:
 	higher_button.disabled = not enabled
 	lower_button.disabled = not enabled
 	cash_out_button.disabled = not enabled
@@ -220,7 +226,7 @@ func _on_game_over(winner_name: String) -> void:
 	base_card_label.text = "GAME OVER"
 	combo_label.text = "WINNER: " + winner_name.to_upper()
 	turn_label.text = winner_name.to_upper() + " WINS!"
-	_enable_player_controls(false)
+	set_player_controls_enabled(false)
 	restart_button.show()
 
 # Returns true if the game is over
