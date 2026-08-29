@@ -93,5 +93,3 @@ text = "GUESS LOWER"
 [node name="CashOutButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=749436423]
 layout_mode = 2
 text = "CASH OUT"
-
-[node name="Node" type="Node" parent="." unique_id=264529255]
