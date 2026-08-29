@@ -105,7 +105,9 @@ func process_guess(is_higher: bool) -> void:
 		var damage: int = max(1, current_combo_damage)
 		player_current_health -= damage
 		current_combo_damage = 0
-		current_base_value = new_card
+		
+		# Generate and store a new random card value after damage is resolved
+		current_base_value = draw_card()
 		
 		health_changed.emit(player_current_health, enemy_current_health)
 		combo_updated.emit(current_combo_damage)
@@ -118,8 +120,15 @@ func cash_out() -> void:
 	if current_combo_damage > 0:
 		enemy_current_health -= current_combo_damage
 		current_combo_damage = 0
+		
+		# Generate and store a new random card value after damage is resolved
+		current_base_value = draw_card()
+		
 		health_changed.emit(player_current_health, enemy_current_health)
 		combo_updated.emit(current_combo_damage)
+		
+		# Explicitly refresh UI label text
+		_update_base_card_ui()
 		check_game_state()
 
 # 8. Helper functions to update UI labels cleanly
