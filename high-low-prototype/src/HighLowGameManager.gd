@@ -23,6 +23,7 @@ var is_player_turn: bool = true
 @onready var higher_button: Button = $UI_Layer/ButtonsContainer/HigherButton
 @onready var lower_button: Button = $UI_Layer/ButtonsContainer/LowerButton
 @onready var cash_out_button: Button = $UI_Layer/ButtonsContainer/CashOutButton
+@onready var restart_button: Button = $UI_Layer/ButtonsContainer/RestartButton
 @onready var enemy_ai = $EnemyAI
 
 # 4. Initialization and signal connections
@@ -36,9 +37,13 @@ func _ready() -> void:
 	higher_button.pressed.connect(_on_higher_pressed)
 	lower_button.pressed.connect(_on_lower_pressed)
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
+	restart_button.pressed.connect(restart_match)
 	
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
+	
+	# Hide restart button initially
+	restart_button.hide()
 	
 	# Initialize game state
 	start_new_match()
@@ -67,6 +72,10 @@ func start_new_match() -> void:
 	
 	_enable_player_controls(true)
 	_update_base_card_ui()
+
+func restart_match() -> void:
+	restart_button.hide()
+	start_new_match()
 
 func rebuild_deck() -> void:
 	deck.clear()
@@ -205,8 +214,9 @@ func _update_turn_label() -> void:
 func _on_game_over(winner_name: String) -> void:
 	base_card_label.text = "GAME OVER"
 	combo_label.text = "WINNER: " + winner_name.to_upper()
-	turn_label.text = "MATCH FINISHED"
+	turn_label.text = winner_name.to_upper() + " WINS!"
 	_enable_player_controls(false)
+	restart_button.show()
 
 # Returns true if the game is over
 func check_game_state() -> bool:
