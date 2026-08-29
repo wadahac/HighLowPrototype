@@ -19,6 +19,7 @@ var is_player_turn: bool = true
 @onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
 @onready var combo_label: Label = $UI_Layer/Table/ComboLabel
 @onready var health_label: Label = $UI_Layer/Table/HealthLabel
+@onready var turn_label: Label = $UI_Layer/Table/Turn
 @onready var higher_button: Button = $UI_Layer/ButtonsContainer/HigherButton
 @onready var lower_button: Button = $UI_Layer/ButtonsContainer/LowerButton
 @onready var cash_out_button: Button = $UI_Layer/ButtonsContainer/CashOutButton
@@ -59,6 +60,7 @@ func start_new_match() -> void:
 	# Explicitly invoke the setup updates right after setting base variables
 	health_changed.emit(player_current_health, enemy_current_health)
 	combo_updated.emit(current_combo_damage)
+	_update_turn_label()
 	
 	rebuild_deck()
 	current_base_value = draw_card()
@@ -171,6 +173,7 @@ func cash_out() -> void:
 
 func switch_turn() -> void:
 	is_player_turn = not is_player_turn
+	_update_turn_label()
 	if is_player_turn:
 		_enable_player_controls(true)
 	else:
@@ -193,9 +196,16 @@ func _on_combo_updated(current_combo: int) -> void:
 func _update_base_card_ui() -> void:
 	base_card_label.text = "CARD VALUE: " + str(current_base_value)
 
+func _update_turn_label() -> void:
+	if is_player_turn:
+		turn_label.text = "YOUR TURN"
+	else:
+		turn_label.text = "ENEMY'S TURN..."
+
 func _on_game_over(winner_name: String) -> void:
 	base_card_label.text = "GAME OVER"
 	combo_label.text = "WINNER: " + winner_name.to_upper()
+	turn_label.text = "MATCH FINISHED"
 	_enable_player_controls(false)
 
 # Returns true if the game is over

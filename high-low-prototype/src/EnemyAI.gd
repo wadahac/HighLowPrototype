@@ -19,7 +19,8 @@ func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
 
 func take_turn(current_card_value: int) -> void:
-	await get_tree().create_timer(1.5).timeout
+	# Random delay between 1.0 and 5.0 seconds
+	await get_tree().create_timer(randf_range(1.0, 5.0)).timeout
 	
 	# Calculate remaining cards in the deck
 	var counts = {}
@@ -40,11 +41,24 @@ func take_turn(current_card_value: int) -> void:
 		elif v < current_card_value:
 			lower_count += remaining_copies
 			
-	var choice: String = "higher"
+	var optimal_choice: String = "higher"
+	var worse_choice: String = "lower"
+	
 	if lower_count > higher_count:
-		choice = "lower"
+		optimal_choice = "lower"
+		worse_choice = "higher"
 	elif lower_count == higher_count:
 		# Tie breaker based on card position
-		choice = "higher" if current_card_value <= 6 else "lower"
+		if current_card_value <= 6:
+			optimal_choice = "higher"
+			worse_choice = "lower"
+		else:
+			optimal_choice = "lower"
+			worse_choice = "higher"
+			
+	# Determine final choice with a 20% mistake chance
+	var choice: String = optimal_choice
+	if randf() < 0.2:
+		choice = worse_choice
 		
 	decision_made.emit(choice)
