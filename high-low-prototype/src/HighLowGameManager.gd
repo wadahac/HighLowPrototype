@@ -12,6 +12,7 @@ var enemy_max_health: int = 10
 var enemy_current_health: int = 10
 var current_base_value: int = 0
 var current_combo_damage: int = 0
+var current_streak: int = 0
 var deck: Array[int] = []
 var is_player_turn: bool = true
 
@@ -57,6 +58,7 @@ func start_new_match() -> void:
 	player_current_health = player_max_health
 	enemy_current_health = enemy_max_health
 	current_combo_damage = 0
+	current_streak = 0
 	is_player_turn = true
 	
 	if enemy_ai:
@@ -132,7 +134,9 @@ func process_guess(is_higher: bool) -> void:
 		
 	if is_correct:
 		if not is_tie:
-			current_combo_damage += 1
+			current_streak += 1
+			# Exponential dynamic stake calculation: Gain = 2 ^ (streak - 1)
+			current_combo_damage += int(pow(2, current_streak - 1))
 		current_base_value = new_card
 		combo_updated.emit(current_combo_damage)
 		_update_base_card_ui()
@@ -145,6 +149,7 @@ func process_guess(is_higher: bool) -> void:
 		else:
 			enemy_current_health = max(0, enemy_current_health - damage)
 		current_combo_damage = 0
+		current_streak = 0
 		
 		# Generate and store a new random card value after damage is resolved
 		current_base_value = draw_card()
@@ -165,6 +170,7 @@ func cash_out() -> void:
 		else:
 			player_current_health = max(0, player_current_health - current_combo_damage)
 		current_combo_damage = 0
+		current_streak = 0
 		
 		# Generate and store a new random card value after damage is resolved
 		current_base_value = draw_card()
@@ -199,7 +205,7 @@ func _on_health_changed(player_hp: int, enemy_hp: int) -> void:
 	health_label.text = "PLAYER HP: " + str(player_hp) + " | ENTITY HP: " + str(enemy_hp)
 
 func _on_combo_updated(current_combo: int) -> void:
-	combo_label.text = "CURRENT STAKE: " + str(current_combo) + " POINTS"
+	combo_label.text = "CURRENT STAKE: " + str(current_combo) + " HP"
 
 func _update_base_card_ui() -> void:
 	base_card_label.text = "CARD VALUE: " + str(current_base_value)
