@@ -13,6 +13,7 @@ var enemy_current_health: int = 10
 var current_base_value: int = 0
 var current_combo_damage: int = 0
 var deck: Array[int] = []
+var is_player_turn: bool = true
 
 # 3. @onready variables targeting exact relative paths
 @onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
@@ -21,6 +22,7 @@ var deck: Array[int] = []
 @onready var higher_button: Button = $UI_Layer/ButtonsContainer/HigherButton
 @onready var lower_button: Button = $UI_Layer/ButtonsContainer/LowerButton
 @onready var cash_out_button: Button = $UI_Layer/ButtonsContainer/CashOutButton
+@onready var enemy_ai = $EnemyAI
 
 # 4. Initialization and signal connections
 func _ready() -> void:
@@ -34,6 +36,9 @@ func _ready() -> void:
 	lower_button.pressed.connect(_on_lower_pressed)
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
 	
+	if enemy_ai:
+		enemy_ai.decision_made.connect(_on_enemy_decision_made)
+	
 	# Initialize game state
 	start_new_match()
 	
@@ -46,6 +51,10 @@ func start_new_match() -> void:
 	player_current_health = player_max_health
 	enemy_current_health = enemy_max_health
 	current_combo_damage = 0
+	is_player_turn = true
+	
+	if enemy_ai:
+		enemy_ai.reset_deck_memory()
 	
 	# Explicitly invoke the setup updates right after setting base variables
 	health_changed.emit(player_current_health, enemy_current_health)
@@ -54,10 +63,7 @@ func start_new_match() -> void:
 	rebuild_deck()
 	current_base_value = draw_card()
 	
-	higher_button.disabled = false
-	lower_button.disabled = false
-	cash_out_button.disabled = false
-	
+	_enable_player_controls(true)
 	_update_base_card_ui()
 
 func rebuild_deck() -> void:
@@ -69,17 +75,38 @@ func rebuild_deck() -> void:
 func draw_card() -> int:
 	if deck.is_empty():
 		rebuild_deck()
-	return deck.pop_back()
+	var card = deck.pop_back()
+	if enemy_ai:
+		enemy_ai.record_card_drawn(card)
+	return card
 
 # Button handlers
 func _on_higher_pressed() -> void:
-	process_guess(true)
+	if is_player_turn:
+		process_guess(true)
 
 func _on_lower_pressed() -> void:
-	process_guess(false)
+	if is_player_turn:
+		process_guess(false)
 
 func _on_cash_out_pressed() -> void:
-	cash_out()
+	if is_player_turn:
+		cash_out()
+
+# AI Decision Handler
+func _on_enemy_decision_made(choice: String) -> void:
+	if is_player_turn:
+		return
+	
+	process_guess(choice == "higher")
+	
+	# If the game is still going and it remains the enemy's turn (they didn't bust)
+	if not is_player_turn and player_current_health > 0 and enemy_current_health > 0:
+		# AI decides to cash out if combo is high enough, otherwise continues guessing
+		if current_combo_damage >= 2:
+			cash_out()
+		else:
+			enemy_ai.take_turn(current_base_value)
 
 # 6. Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -100,10 +127,15 @@ func process_guess(is_higher: bool) -> void:
 			current_combo_damage += 1
 		current_base_value = new_card
 		combo_updated.emit(current_combo_damage)
+		_update_base_card_ui()
+		check_game_state()
 	else:
-		# BUST: deduct current_combo_damage from player_current_health (minimum 1 damage if combo is 0)
+		# BUST: deduct current_combo_damage from active player's health (minimum 1 damage if combo is 0)
 		var damage: int = max(1, current_combo_damage)
-		player_current_health -= damage
+		if is_player_turn:
+			player_current_health -= damage
+		else:
+			enemy_current_health -= damage
 		current_combo_damage = 0
 		
 		# Generate and store a new random card value after damage is resolved
@@ -111,14 +143,18 @@ func process_guess(is_higher: bool) -> void:
 		
 		health_changed.emit(player_current_health, enemy_current_health)
 		combo_updated.emit(current_combo_damage)
+		_update_base_card_ui()
 		
-	_update_base_card_ui()
-	check_game_state()
+		if not check_game_state():
+			switch_turn()
 
 # 7. Cash out logic
 func cash_out() -> void:
 	if current_combo_damage > 0:
-		enemy_current_health -= current_combo_damage
+		if is_player_turn:
+			enemy_current_health -= current_combo_damage
+		else:
+			player_current_health -= current_combo_damage
 		current_combo_damage = 0
 		
 		# Generate and store a new random card value after damage is resolved
@@ -129,7 +165,23 @@ func cash_out() -> void:
 		
 		# Explicitly refresh UI label text
 		_update_base_card_ui()
-		check_game_state()
+		
+		if not check_game_state():
+			switch_turn()
+
+func switch_turn() -> void:
+	is_player_turn = not is_player_turn
+	if is_player_turn:
+		_enable_player_controls(true)
+	else:
+		_enable_player_controls(false)
+		if enemy_ai:
+			enemy_ai.take_turn(current_base_value)
+
+func _enable_player_controls(enabled: bool) -> void:
+	higher_button.disabled = not enabled
+	lower_button.disabled = not enabled
+	cash_out_button.disabled = not enabled
 
 # 8. Helper functions to update UI labels cleanly
 func _on_health_changed(player_hp: int, enemy_hp: int) -> void:
@@ -144,12 +196,14 @@ func _update_base_card_ui() -> void:
 func _on_game_over(winner_name: String) -> void:
 	base_card_label.text = "GAME OVER"
 	combo_label.text = "WINNER: " + winner_name.to_upper()
-	higher_button.disabled = true
-	lower_button.disabled = true
-	cash_out_button.disabled = true
+	_enable_player_controls(false)
 
-func check_game_state() -> void:
+# Returns true if the game is over
+func check_game_state() -> bool:
 	if player_current_health <= 0:
 		game_over.emit("Entity")
+		return true
 	elif enemy_current_health <= 0:
 		game_over.emit("Player")
+		return true
+	return false
