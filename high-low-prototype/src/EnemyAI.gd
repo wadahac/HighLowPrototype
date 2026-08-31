@@ -34,7 +34,7 @@ func reset_trumps() -> void:
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
 
-func take_turn(current_card_value: int, current_stake: int, player_hp: int, enemy_cash_out_locked: bool) -> void:
+func take_turn(current_card_value: int, current_stake: int, player_hp: int, enemy_cash_out_and_pass_locked: bool) -> void:
 	# Random delay between 1.0 and 3.0 seconds
 	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
 	
@@ -50,7 +50,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 				return
 			if trump == sacrifice_trump:
 				# Re-evaluate turn with the new card value
-				take_turn(manager.active_card, manager.shared_pot, manager.player_hp, enemy_cash_out_locked)
+				take_turn(manager.active_card, manager.shared_pot, manager.player_hp, enemy_cash_out_and_pass_locked)
 				return
 
 	# Update local variables in case they changed from Trumps
@@ -58,17 +58,13 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	current_stake = manager.shared_pot
 
 	# Lethal Cash-Out Check (only if not locked)
-	if not enemy_cash_out_locked and current_stake >= player_hp and current_stake > 0:
+	if not enemy_cash_out_and_pass_locked and current_stake >= player_hp and current_stake > 0:
 		decision_made.emit("cash_out")
 		return
 	
-	# Determine if we want to Pass
+	# Determine if we want to Pass (only if not locked)
 	var should_pass: bool = false
-	if enemy_cash_out_locked:
-		if current_card_value >= 6 and current_card_value <= 8:
-			should_pass = true
-
-	if should_pass:
+	if should_pass and not enemy_cash_out_and_pass_locked:
 		# Chains of Fate check right before passing
 		if not chains_trump.is_used and chains_trump.can_enemy_use(manager, self):
 			chains_trump.execute_enemy(manager, self)

@@ -17,8 +17,8 @@ var deck: Array[int] = []
 var is_player_turn: bool = true
 
 # Trump Card State
-var enemy_cash_out_locked: bool = false
-var player_cash_out_locked: bool = false
+var enemy_cash_out_and_pass_locked: bool = false
+var player_cash_out_and_pass_locked: bool = false
 var mirror_active: bool = false
 
 # Trump Instances
@@ -85,8 +85,8 @@ func start_new_match() -> void:
 	shared_pot = 0
 	current_streak = 0
 	is_player_turn = true
-	enemy_cash_out_locked = false
-	player_cash_out_locked = false
+	enemy_cash_out_and_pass_locked = false
+	player_cash_out_and_pass_locked = false
 	mirror_active = false
 	
 	chains_trump.is_used = false
@@ -215,7 +215,7 @@ func _on_enemy_decision_made(choice: String) -> void:
 		process_guess(choice == "higher")
 	
 	if not is_player_turn and player_hp > 0 and enemy_hp > 0:
-		enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_locked)
+		enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -300,21 +300,21 @@ func switch_turn() -> void:
 	if is_player_turn:
 		vision_label.text = ""
 		mirror_active = false
-		enemy_cash_out_locked = false
+		enemy_cash_out_and_pass_locked = false
 		set_player_controls_enabled(true)
-		if player_cash_out_locked:
-			status_label.text = "CASH OUT LOCKED BY CHAINS OF FATE"
+		if player_cash_out_and_pass_locked:
+			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
 	else:
-		player_cash_out_locked = false
+		player_cash_out_and_pass_locked = false
 		set_player_controls_enabled(false)
 		if enemy_ai:
-			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_locked)
+			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
 func set_player_controls_enabled(enabled: bool) -> void:
 	higher_button.disabled = not enabled
 	lower_button.disabled = not enabled
-	cash_out_button.disabled = not enabled or player_cash_out_locked
-	pass_button.disabled = not enabled
+	cash_out_button.disabled = not enabled or player_cash_out_and_pass_locked
+	pass_button.disabled = not enabled or player_cash_out_and_pass_locked
 	
 	if enabled and is_player_turn:
 		chains_button.disabled = chains_trump.is_used
