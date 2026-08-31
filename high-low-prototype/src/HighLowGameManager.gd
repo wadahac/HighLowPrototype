@@ -16,6 +16,16 @@ var current_streak: int = 0
 var deck: Array[int] = []
 var is_player_turn: bool = true
 
+# Trump Card State
+var enemy_cash_out_locked: bool = false
+var mirror_active: bool = false
+
+var chains_used: bool = false
+var executioner_used: bool = false
+var vision_used: bool = false
+var sacrifice_used: bool = false
+var mirror_used: bool = false
+
 # 3. @onready variables targeting exact relative paths
 @onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
 @onready var combo_label: Label = $UI_Layer/Table/ComboLabel
@@ -24,7 +34,20 @@ var is_player_turn: bool = true
 @onready var higher_button: Button = $UI_Layer/ButtonsContainer/HigherButton
 @onready var lower_button: Button = $UI_Layer/ButtonsContainer/LowerButton
 @onready var cash_out_button: Button = $UI_Layer/ButtonsContainer/CashOutButton
+@onready var pass_button: Button = $"UI_Layer/ButtonsContainer/PassButton"
 @onready var restart_button: Button = $UI_Layer/ButtonsContainer/RestartButton
+
+# Trump Buttons
+@onready var chains_button: Button = $"UI_Layer/TrumpContainer/ChainsButton"
+@onready var executioner_button: Button = $"UI_Layer/TrumpContainer/ExecutionerButton"
+@onready var vision_button: Button = $"UI_Layer/TrumpContainer/VisionButton"
+@onready var sacrifice_button: Button = $"UI_Layer/TrumpContainer/SacrificeButton"
+@onready var mirror_button: Button = $"UI_Layer/TrumpContainer/MirrorButton"
+
+# Info Labels
+@onready var vision_label: Label = $"UI_Layer/InfoPanel/VisionLabel"
+@onready var status_label: Label = $"UI_Layer/InfoPanel/StatusLabel"
+
 @onready var enemy_ai = $EnemyAI
 
 # 4. Initialization and signal connections
@@ -38,7 +61,15 @@ func _ready() -> void:
 	higher_button.pressed.connect(_on_higher_pressed)
 	lower_button.pressed.connect(_on_lower_pressed)
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
+	pass_button.pressed.connect(_on_pass_pressed)
 	restart_button.pressed.connect(restart_match)
+	
+	# Connect Trump buttons
+	chains_button.pressed.connect(_on_chains_pressed)
+	executioner_button.pressed.connect(_on_executioner_pressed)
+	vision_button.pressed.connect(_on_vision_pressed)
+	sacrifice_button.pressed.connect(_on_sacrifice_pressed)
+	mirror_button.pressed.connect(_on_mirror_pressed)
 	
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
@@ -60,6 +91,19 @@ func start_new_match() -> void:
 	current_combo_damage = 0
 	current_streak = 0
 	is_player_turn = true
+	enemy_cash_out_locked = false
+	mirror_active = false
+	
+	chains_used = false
+	executioner_used = false
+	vision_used = false
+	sacrifice_used = false
+	mirror_used = false
+	
+	if vision_label:
+		vision_label.text = ""
+	if status_label:
+		status_label.text = ""
 	
 	if enemy_ai:
 		enemy_ai.reset_deck_memory()
@@ -109,6 +153,59 @@ func _on_cash_out_pressed() -> void:
 		set_player_controls_enabled(false)
 		cash_out()
 
+func _on_pass_pressed() -> void:
+	if is_player_turn:
+		set_player_controls_enabled(false)
+		status_label.text = "Player passed the turn."
+		switch_turn()
+
+# Trump Card Handlers
+func _on_chains_pressed() -> void:
+	chains_used = true
+	chains_button.disabled = true
+	enemy_cash_out_locked = true
+	status_label.text = "Chains of Fate active! Enemy cannot cash out next turn."
+
+func _on_executioner_pressed() -> void:
+	executioner_used = true
+	executioner_button.disabled = true
+	var dmg = int(current_combo_damage * 0.5)
+	enemy_current_health = max(0, enemy_current_health - dmg)
+	current_combo_damage -= dmg
+	health_changed.emit(player_current_health, enemy_current_health)
+	combo_updated.emit(current_combo_damage)
+	status_label.text = "Executioner dealt " + str(dmg) + " damage!"
+	check_game_state()
+
+func _on_vision_pressed() -> void:
+	vision_used = true
+	vision_button.disabled = true
+	while deck.size() < 3:
+		var temp_deck: Array[int] = []
+		for i in range(1, 14):
+			temp_deck.append(i)
+		temp_deck.shuffle()
+		deck = temp_deck + deck
+	var future_card = deck[deck.size() - 3]
+	vision_label.text = "Future Card (3 turns): " + str(future_card)
+	status_label.text = "Prophetic Vision activated!"
+
+func _on_sacrifice_pressed() -> void:
+	sacrifice_used = true
+	sacrifice_button.disabled = true
+	player_current_health = max(0, player_current_health - 2)
+	current_base_value = draw_card()
+	health_changed.emit(player_current_health, enemy_current_health)
+	_update_base_card_ui()
+	status_label.text = "Blood Sacrifice! Card replaced."
+	check_game_state()
+
+func _on_mirror_pressed() -> void:
+	mirror_used = true
+	mirror_button.disabled = true
+	mirror_active = true
+	status_label.text = "Mirror Shard active! Backfire damage will be reflected."
+
 # AI Decision Handler
 func _on_enemy_decision_made(choice: String) -> void:
 	if is_player_turn:
@@ -116,13 +213,16 @@ func _on_enemy_decision_made(choice: String) -> void:
 	
 	if choice == "cash_out":
 		cash_out()
+	elif choice == "pass":
+		status_label.text = "Enemy passed the turn."
+		switch_turn()
 	else:
 		process_guess(choice == "higher")
 	
-	# If the game is still going and it remains the enemy's turn (they didn't bust/cash out)
+	# If the game is still going and it remains the enemy's turn (they didn't bust/cash out/pass)
 	if not is_player_turn and player_current_health > 0 and enemy_current_health > 0:
 		# AI continues guessing based on its card-counting logic
-		enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health)
+		enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health, enemy_cash_out_locked)
 
 # 6. Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -154,14 +254,21 @@ func process_guess(is_higher: bool) -> void:
 		# BUST: deduct current_combo_damage from active player's health (minimum 1 damage if combo is 0)
 		var damage: int = max(1, current_combo_damage)
 		if is_player_turn:
-			player_current_health = max(0, player_current_health - damage)
+			if mirror_active:
+				var reflected_damage = int(damage * 0.5)
+				var self_damage = damage - reflected_damage
+				player_current_health = max(0, player_current_health - self_damage)
+				enemy_current_health = max(0, enemy_current_health - reflected_damage)
+				mirror_active = false
+				status_label.text = "Mirror Shard reflected " + str(reflected_damage) + " damage!"
+			else:
+				player_current_health = max(0, player_current_health - damage)
 		else:
 			enemy_current_health = max(0, enemy_current_health - damage)
+			
 		current_combo_damage = 0
 		current_streak = 0
-		
-		# Generate and store a new random card value after damage is resolved
-		current_base_value = draw_card()
+		current_base_value = new_card
 		
 		health_changed.emit(player_current_health, enemy_current_health)
 		combo_updated.emit(current_combo_damage)
@@ -181,9 +288,6 @@ func cash_out() -> void:
 		current_combo_damage = 0
 		current_streak = 0
 		
-		# Generate and store a new random card value after damage is resolved
-		current_base_value = draw_card()
-		
 		health_changed.emit(player_current_health, enemy_current_health)
 		combo_updated.emit(current_combo_damage)
 		
@@ -198,16 +302,34 @@ func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	if is_player_turn:
+		vision_label.text = ""
+		mirror_active = false
+		enemy_cash_out_locked = false
 		set_player_controls_enabled(true)
 	else:
 		set_player_controls_enabled(false)
 		if enemy_ai:
-			enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health)
+			enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health, enemy_cash_out_locked)
 
 func set_player_controls_enabled(enabled: bool) -> void:
 	higher_button.disabled = not enabled
 	lower_button.disabled = not enabled
 	cash_out_button.disabled = not enabled
+	pass_button.disabled = not enabled
+	
+	# Trump buttons are only usable during Player's turn
+	if enabled and is_player_turn:
+		chains_button.disabled = chains_used
+		executioner_button.disabled = executioner_used
+		vision_button.disabled = vision_used
+		sacrifice_button.disabled = sacrifice_used
+		mirror_button.disabled = mirror_used
+	else:
+		chains_button.disabled = true
+		executioner_button.disabled = true
+		vision_button.disabled = true
+		sacrifice_button.disabled = true
+		mirror_button.disabled = true
 
 # 8. Helper functions to update UI labels cleanly
 func _on_health_changed(player_hp: int, enemy_hp: int) -> void:
