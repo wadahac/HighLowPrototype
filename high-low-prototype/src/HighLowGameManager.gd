@@ -129,8 +129,31 @@ func rebuild_deck() -> void:
 func draw_card() -> int:
 	if deck.size() < 3:
 		rebuild_deck()
-		status_label.text = "Deck reshuffled!"
-	var card = deck.pop_back()
+		status_label.text = "Deck reshuffled with fresh cards!"
+	
+	var card_index = deck.size() - 1
+	var card = deck[card_index]
+	
+	# Ensure the next drawn card value is NEVER identical to active_card
+	if card == active_card:
+		var found_alternative = false
+		for i in range(deck.size() - 2, -1, -1):
+			if deck[i] != active_card:
+				# Swap the identical card with a unique one deeper in the deck
+				var temp = deck[i]
+				deck[i] = deck[card_index]
+				deck[card_index] = temp
+				card = deck[card_index]
+				found_alternative = true
+				break
+		
+		# If no alternative is found (e.g. all remaining cards are identical), rebuild early
+		if not found_alternative:
+			rebuild_deck()
+			status_label.text = "Deck reshuffled with fresh cards!"
+			return draw_card()
+			
+	deck.pop_back()
 	if enemy_ai:
 		enemy_ai.record_card_drawn(card)
 	return card
