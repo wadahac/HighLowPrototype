@@ -170,12 +170,12 @@ func _on_lower_pressed() -> void:
 		process_guess(false)
 
 func _on_cash_out_pressed() -> void:
-	if is_player_turn:
+	if is_player_turn and not player_cash_out_and_pass_locked:
 		set_player_controls_enabled(false)
 		cash_out()
 
 func _on_pass_pressed() -> void:
-	if is_player_turn:
+	if is_player_turn and not player_cash_out_and_pass_locked:
 		set_player_controls_enabled(false)
 		status_label.text = "Player passed the turn."
 		switch_turn()
@@ -310,54 +310,4 @@ func switch_turn() -> void:
 		if enemy_ai:
 			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
-func set_player_controls_enabled(enabled: bool) -> void:
-	higher_button.disabled = not enabled
-	lower_button.disabled = not enabled
-	cash_out_button.disabled = not enabled or player_cash_out_and_pass_locked
-	pass_button.disabled = not enabled or player_cash_out_and_pass_locked
-	
-	if enabled and is_player_turn:
-		chains_button.disabled = chains_trump.is_used
-		executioner_button.disabled = executioner_trump.is_used
-		vision_button.disabled = vision_trump.is_used
-		sacrifice_button.disabled = sacrifice_trump.is_used
-		mirror_button.disabled = mirror_trump.is_used
-	else:
-		chains_button.disabled = true
-		executioner_button.disabled = true
-		vision_button.disabled = true
-		sacrifice_button.disabled = true
-		mirror_button.disabled = true
-
-# Helper functions to update UI labels cleanly
-func _on_health_changed(p_hp: int, e_hp: int) -> void:
-	health_label.text = "PLAYER HP: " + str(p_hp) + " | ENTITY HP: " + str(e_hp)
-
-func _on_combo_updated(current_combo: int) -> void:
-	combo_label.text = "CURRENT STAKE: " + str(current_combo) + " HP"
-
-func _update_base_card_ui() -> void:
-	base_card_label.text = "CARD VALUE: " + str(active_card)
-
-func _update_turn_label() -> void:
-	if is_player_turn:
-		turn_label.text = "YOUR TURN"
-	else:
-		turn_label.text = "ENEMY'S TURN..."
-
-func _on_game_over(winner_name: String) -> void:
-	base_card_label.text = "GAME OVER"
-	combo_label.text = "WINNER: " + winner_name.to_upper()
-	turn_label.text = winner_name.to_upper() + " WINS!"
-	set_player_controls_enabled(false)
-	restart_button.show()
-
-# Returns true if the game is over
-func check_game_state() -> bool:
-	if player_hp <= 0:
-		game_over.emit("Entity")
-		return true
-	elif enemy_hp <= 0:
-		game_over.emit("Player")
-		return true
-	return false
+func set_player_controls_enabled

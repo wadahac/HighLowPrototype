@@ -13,5 +13,5 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 func can_enemy_use(game_manager, _enemy_ai) -> bool:
 	if is_used:
 		return false
-	# Activate right before passing turn if shared pot >= 3 and active card is 7 or 8
+	# Activate when shared pot >= 3 and active card is 7 or 8
 	return game_manager.shared_pot >= 3 and (game_manager.active_card == 7 or game_manager.active_card == 8)
