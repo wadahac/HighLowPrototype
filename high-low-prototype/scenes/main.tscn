@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://deopnk5xm7ek2"]
 
 [ext_resource type="Script" uid="uid://dtgy32ffiy1h7" path="res://src/HighLowGameManager.gd" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://bikflwn44ytxp" path="res://src/EnemyAI.gd" id="2_0wfyh"]
 
 [node name="Main" type="Node2D" unique_id=182343160]
 script = ExtResource("1_o5qli")
@@ -38,10 +39,10 @@ metadata/_edit_use_anchors_ = true
 [node name="BaseCardLabel" type="Label" parent="UI_Layer/Table" unique_id=1226807319]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 2.15
-anchor_top = -0.475
-anchor_right = 4.0
-anchor_bottom = -0.475
+anchor_left = -0.925
+anchor_top = -0.525
+anchor_right = 0.925
+anchor_bottom = -0.525
 offset_left = 24.0
 offset_top = 1.0
 offset_right = 64.0
@@ -52,10 +53,10 @@ metadata/_edit_use_anchors_ = true
 [node name="ComboLabel" type="Label" parent="UI_Layer/Table" unique_id=1642129600]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = -1.025
-anchor_top = -0.95
-anchor_right = 0.65
-anchor_bottom = -0.95
+anchor_left = -0.425
+anchor_top = -2.575
+anchor_right = 1.25
+anchor_bottom = -2.575
 offset_right = 40.0
 offset_bottom = 23.0
 text = "combo level 2"
@@ -64,14 +65,22 @@ metadata/_edit_use_anchors_ = true
 [node name="HealthLabel" type="Label" parent="UI_Layer/Table" unique_id=1089129879]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = -3.95
-anchor_top = -0.075
-anchor_right = -3.375
-anchor_bottom = -0.075
+anchor_left = 0.125
+anchor_top = 1.425
+anchor_right = 0.7
+anchor_bottom = 1.425
 offset_right = 40.0
 offset_bottom = 23.0
 text = "health 7"
 metadata/_edit_use_anchors_ = true
+
+[node name="turn" type="Label" parent="UI_Layer/Table" unique_id=1754259211]
+layout_mode = 0
+offset_left = -294.0
+offset_top = -42.0
+offset_right = -97.0
+offset_bottom = -19.0
+text = "temporary text label turn"
 
 [node name="ButtonsContainer" type="HBoxContainer" parent="UI_Layer" unique_id=519503482]
 anchors_preset = 12
@@ -93,3 +102,57 @@ text = "GUESS LOWER"
 [node name="CashOutButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=749436423]
 layout_mode = 2
 text = "CASH OUT"
+
+[node name="PassButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=705906401]
+layout_mode = 2
+text = "PASS TURN"
+
+[node name="RestartButton" type="Button" parent="UI_Layer/ButtonsContainer" unique_id=135070634]
+visible = false
+layout_mode = 2
+text = "RESTART MATCH?"
+
+[node name="TrumpContainer" type="HBoxContainer" parent="UI_Layer" unique_id=1873544373]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ChainsButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=733228219]
+layout_mode = 2
+text = "Chains of Fate"
+
+[node name="ExecutionerButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=504559150]
+layout_mode = 2
+text = "Executioner"
+
+[node name="VisionButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=159625727]
+layout_mode = 2
+text = "Prophetic Vision"
+
+[node name="SacrificeButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=2073240811]
+layout_mode = 2
+text = "Blood Sacrifice"
+
+[node name="MirrorButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=1947791960]
+layout_mode = 2
+text = "Mirror Shard"
+
+[node name="InfoPanel" type="VBoxContainer" parent="UI_Layer" unique_id=870315125]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -77.0
+offset_top = -50.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="VisionLabel" type="Label" parent="UI_Layer/InfoPanel" unique_id=1782982449]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="UI_Layer/InfoPanel" unique_id=1254886002]
+layout_mode = 2
+text = "Your Turn"
+
+[node name="EnemyAI" type="Node" parent="." unique_id=2133039468]
+script = ExtResource("2_0wfyh")
