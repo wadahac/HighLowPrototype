@@ -310,4 +310,61 @@ func switch_turn() -> void:
 		if enemy_ai:
 			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
-func set_player_controls_enabled
+func set_player_controls_enabled(enabled: bool) -> void:
+	higher_button.disabled = not enabled
+	lower_button.disabled = not enabled
+	
+	if enabled and is_player_turn:
+		cash_out_button.disabled = player_cash_out_and_pass_locked or shared_pot == 0
+		pass_button.disabled = player_cash_out_and_pass_locked
+		
+		chains_button.disabled = chains_trump.is_used
+		executioner_button.disabled = executioner_trump.is_used
+		vision_button.disabled = vision_trump.is_used
+		sacrifice_button.disabled = sacrifice_trump.is_used
+		mirror_button.disabled = mirror_trump.is_used
+	else:
+		cash_out_button.disabled = true
+		pass_button.disabled = true
+		chains_button.disabled = true
+		executioner_button.disabled = true
+		vision_button.disabled = true
+		sacrifice_button.disabled = true
+		mirror_button.disabled = true
+
+func check_game_state() -> bool:
+	if player_hp <= 0:
+		game_over.emit("Enemy")
+		return true
+	elif enemy_hp <= 0:
+		game_over.emit("Player")
+		return true
+	return false
+
+func _update_base_card_ui() -> void:
+	var names = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+	if active_card >= 1 and active_card <= 13:
+		base_card_label.text = names[active_card]
+	else:
+		base_card_label.text = str(active_card)
+
+func _update_turn_label() -> void:
+	if turn_label:
+		if is_player_turn:
+			turn_label.text = "Your Turn"
+		else:
+			turn_label.text = "Enemy Turn"
+
+func _on_health_changed(p_hp: int, e_hp: int) -> void:
+	if health_label:
+		health_label.text = "Player HP: " + str(p_hp) + " | Enemy HP: " + str(e_hp)
+
+func _on_combo_updated(c_combo: int) -> void:
+	if combo_label:
+		combo_label.text = "Shared Pot: " + str(c_combo)
+
+func _on_game_over(winner: String) -> void:
+	set_player_controls_enabled(false)
+	if status_label:
+		status_label.text = "Game Over! " + winner + " Wins!"
+	restart_button.show()
