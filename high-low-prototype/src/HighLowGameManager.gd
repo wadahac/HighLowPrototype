@@ -146,7 +146,10 @@ func process_guess(is_higher: bool) -> void:
 		current_base_value = new_card
 		combo_updated.emit(current_combo_damage)
 		_update_base_card_ui()
-		check_game_state()
+		if not check_game_state():
+			if is_player_turn:
+				await get_tree().create_timer(1.2).timeout
+				set_player_controls_enabled(true)
 	else:
 		# BUST: deduct current_combo_damage from active player's health (minimum 1 damage if combo is 0)
 		var damage: int = max(1, current_combo_damage)
