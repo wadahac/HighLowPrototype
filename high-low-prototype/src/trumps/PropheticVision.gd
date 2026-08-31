@@ -1,4 +1,4 @@
-extends TrumpCard
+extends "res://src/trumps/TrumpCard.gd"
 
 func execute_player(game_manager) -> void:
 	is_used = true
