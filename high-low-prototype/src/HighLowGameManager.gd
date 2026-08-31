@@ -5,13 +5,13 @@ signal health_changed(player_hp: int, enemy_hp: int)
 signal combo_updated(current_combo: int)
 signal game_over(winner_name: String)
 
-# 2. Variables
+# 2. Standardized Variables
 var player_max_health: int = 10
-var player_current_health: int = 10
+var player_hp: int = 10
 var enemy_max_health: int = 10
-var enemy_current_health: int = 10
-var current_base_value: int = 0
-var current_combo_damage: int = 0
+var enemy_hp: int = 10
+var active_card: int = 0
+var shared_pot: int = 0
 var current_streak: int = 0
 var deck: Array[int] = []
 var is_player_turn: bool = true
@@ -21,11 +21,12 @@ var enemy_cash_out_locked: bool = false
 var player_cash_out_locked: bool = false
 var mirror_active: bool = false
 
-var chains_used: bool = false
-var executioner_used: bool = false
-var vision_used: bool = false
-var sacrifice_used: bool = false
-var mirror_used: bool = false
+# Trump Instances
+var chains_trump = preload("res://src/trumps/ChainsOfFate.gd").new()
+var executioner_trump = preload("res://src/trumps/Executioner.gd").new()
+var vision_trump = preload("res://src/trumps/PropheticVision.gd").new()
+var sacrifice_trump = preload("res://src/trumps/BloodSacrifice.gd").new()
+var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
 
 # 3. @onready variables targeting exact relative paths
 @onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
@@ -53,12 +54,10 @@ var mirror_used: bool = false
 
 # 4. Initialization and signal connections
 func _ready() -> void:
-	# Connect custom signals to helper functions
 	health_changed.connect(_on_health_changed)
 	combo_updated.connect(_on_combo_updated)
 	game_over.connect(_on_game_over)
 	
-	# Connect button pressed signals directly to gameplay functions
 	higher_button.pressed.connect(_on_higher_pressed)
 	lower_button.pressed.connect(_on_lower_pressed)
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
@@ -75,32 +74,26 @@ func _ready() -> void:
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
 	
-	# Hide restart button initially
 	restart_button.hide()
-	
-	# Initialize game state
 	start_new_match()
-	
-	# Manually call initial label text draw update so the first card is visible immediately
 	_update_base_card_ui()
-	
-	print("GAME INITALIZED SUCCESFULLY")
+	print("GAME INITIALIZED SUCCESSFULLY")
 
 func start_new_match() -> void:
-	player_current_health = player_max_health
-	enemy_current_health = enemy_max_health
-	current_combo_damage = 0
+	player_hp = player_max_health
+	enemy_hp = enemy_max_health
+	shared_pot = 0
 	current_streak = 0
 	is_player_turn = true
 	enemy_cash_out_locked = false
 	player_cash_out_locked = false
 	mirror_active = false
 	
-	chains_used = false
-	executioner_used = false
-	vision_used = false
-	sacrifice_used = false
-	mirror_used = false
+	chains_trump.is_used = false
+	executioner_trump.is_used = false
+	vision_trump.is_used = false
+	sacrifice_trump.is_used = false
+	mirror_trump.is_used = false
 	
 	if vision_label:
 		vision_label.text = ""
@@ -111,13 +104,12 @@ func start_new_match() -> void:
 		enemy_ai.reset_deck_memory()
 		enemy_ai.reset_trumps()
 	
-	# Explicitly invoke the setup updates right after setting base variables
-	health_changed.emit(player_current_health, enemy_current_health)
-	combo_updated.emit(current_combo_damage)
+	health_changed.emit(player_hp, enemy_hp)
+	combo_updated.emit(shared_pot)
 	_update_turn_label()
 	
 	rebuild_deck()
-	current_base_value = draw_card()
+	active_card = draw_card()
 	
 	set_player_controls_enabled(true)
 	_update_base_card_ui()
@@ -128,13 +120,16 @@ func restart_match() -> void:
 
 func rebuild_deck() -> void:
 	deck.clear()
+	# Generate a full 52-card deck (4 copies of values 1 to 13)
 	for i in range(1, 14):
-		deck.append(i)
+		for j in range(4):
+			deck.append(i)
 	deck.shuffle()
 
 func draw_card() -> int:
-	if deck.is_empty():
+	if deck.size() < 3:
 		rebuild_deck()
+		status_label.text = "Deck reshuffled!"
 	var card = deck.pop_back()
 	if enemy_ai:
 		enemy_ai.record_card_drawn(card)
@@ -164,50 +159,24 @@ func _on_pass_pressed() -> void:
 
 # Trump Card Handlers
 func _on_chains_pressed() -> void:
-	chains_used = true
-	chains_button.disabled = true
-	enemy_cash_out_locked = true
-	status_label.text = "Player used Chains of Fate! Enemy cannot cash out next turn."
+	chains_trump.execute_player(self)
+	set_player_controls_enabled(true)
 
 func _on_executioner_pressed() -> void:
-	executioner_used = true
-	executioner_button.disabled = true
-	var dmg = int(current_combo_damage * 0.5)
-	enemy_current_health = max(0, enemy_current_health - dmg)
-	current_combo_damage -= dmg
-	health_changed.emit(player_current_health, enemy_current_health)
-	combo_updated.emit(current_combo_damage)
-	status_label.text = "Player used Executioner! Dealt " + str(dmg) + " damage!"
-	check_game_state()
+	executioner_trump.execute_player(self)
+	set_player_controls_enabled(true)
 
 func _on_vision_pressed() -> void:
-	vision_used = true
-	vision_button.disabled = true
-	while deck.size() < 3:
-		var temp_deck: Array[int] = []
-		for i in range(1, 14):
-			temp_deck.append(i)
-		temp_deck.shuffle()
-		deck = temp_deck + deck
-	var future_card = deck[deck.size() - 3]
-	vision_label.text = "Future Card (3 turns): " + str(future_card)
-	status_label.text = "Player used Prophetic Vision!"
+	vision_trump.execute_player(self)
+	set_player_controls_enabled(true)
 
 func _on_sacrifice_pressed() -> void:
-	sacrifice_used = true
-	sacrifice_button.disabled = true
-	player_current_health = max(0, player_current_health - 2)
-	current_base_value = draw_card()
-	health_changed.emit(player_current_health, enemy_current_health)
-	_update_base_card_ui()
-	status_label.text = "Player used Blood Sacrifice! Card replaced."
-	check_game_state()
+	sacrifice_trump.execute_player(self)
+	set_player_controls_enabled(true)
 
 func _on_mirror_pressed() -> void:
-	mirror_used = true
-	mirror_button.disabled = true
-	mirror_active = true
-	status_label.text = "Player used Mirror Shard! Backfire damage will be reflected."
+	mirror_trump.execute_player(self)
+	set_player_controls_enabled(true)
 
 # AI Decision Handler
 func _on_enemy_decision_made(choice: String) -> void:
@@ -222,87 +191,80 @@ func _on_enemy_decision_made(choice: String) -> void:
 	else:
 		process_guess(choice == "higher")
 	
-	# If the game is still going and it remains the enemy's turn (they didn't bust/cash out/pass)
-	if not is_player_turn and player_current_health > 0 and enemy_current_health > 0:
-		# AI continues guessing based on its card-counting logic
-		enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health, enemy_cash_out_locked)
+	if not is_player_turn and player_hp > 0 and enemy_hp > 0:
+		enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_locked)
 
-# 6. Process guess logic
+# Process guess logic
 func process_guess(is_higher: bool) -> void:
 	var new_card: int = draw_card()
 	var is_correct: bool = false
-	var is_tie: bool = (new_card == current_base_value)
+	var is_tie: bool = (new_card == active_card)
 	
 	if is_tie:
-		# Ties count as a safe pass
 		is_correct = true
-	elif is_higher and new_card > current_base_value:
+	elif is_higher and new_card > active_card:
 		is_correct = true
-	elif not is_higher and new_card < current_base_value:
+	elif not is_higher and new_card < active_card:
 		is_correct = true
 		
 	if is_correct:
 		if not is_tie:
 			current_streak += 1
-			# Exponential dynamic stake calculation: Gain = 2 ^ (streak - 1)
-			current_combo_damage += int(pow(2, current_streak - 1))
-		current_base_value = new_card
-		combo_updated.emit(current_combo_damage)
+			shared_pot += int(pow(2, current_streak - 1))
+		active_card = new_card
+		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
 		if not check_game_state():
 			if is_player_turn:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
 	else:
-		# BUST: deduct current_combo_damage from active player's health (minimum 1 damage if combo is 0)
-		var damage: int = max(1, current_combo_damage)
+		var damage: int = max(1, shared_pot)
 		if is_player_turn:
 			if mirror_active:
 				var reflected_damage = int(damage * 0.5)
 				var self_damage = damage - reflected_damage
-				player_current_health = max(0, player_current_health - self_damage)
-				enemy_current_health = max(0, enemy_current_health - reflected_damage)
+				player_hp = max(0, player_hp - self_damage)
+				enemy_hp = max(0, enemy_hp - reflected_damage)
 				mirror_active = false
 				status_label.text = "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				player_current_health = max(0, player_current_health - damage)
+				player_hp = max(0, player_hp - damage)
 		else:
 			if mirror_active:
 				var reflected_damage = int(damage * 0.5)
 				var self_damage = damage - reflected_damage
-				enemy_current_health = max(0, enemy_current_health - self_damage)
-				player_current_health = max(0, player_current_health - reflected_damage)
+				enemy_hp = max(0, enemy_hp - self_damage)
+				player_hp = max(0, player_hp - reflected_damage)
 				mirror_active = false
 				status_label.text = "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				enemy_current_health = max(0, enemy_current_health - damage)
+				enemy_hp = max(0, enemy_hp - damage)
 			
-		current_combo_damage = 0
+		shared_pot = 0
 		current_streak = 0
-		current_base_value = new_card
+		active_card = new_card
 		
-		health_changed.emit(player_current_health, enemy_current_health)
-		combo_updated.emit(current_combo_damage)
+		health_changed.emit(player_hp, enemy_hp)
+		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
 		
 		if not check_game_state():
 			await get_tree().create_timer(1.2).timeout
 			switch_turn()
 
-# 7. Cash out logic
+# Cash out logic
 func cash_out() -> void:
-	if current_combo_damage > 0:
+	if shared_pot > 0:
 		if is_player_turn:
-			enemy_current_health = max(0, enemy_current_health - current_combo_damage)
+			enemy_hp = max(0, enemy_hp - shared_pot)
 		else:
-			player_current_health = max(0, player_current_health - current_combo_damage)
-		current_combo_damage = 0
+			player_hp = max(0, player_hp - shared_pot)
+		shared_pot = 0
 		current_streak = 0
 		
-		health_changed.emit(player_current_health, enemy_current_health)
-		combo_updated.emit(current_combo_damage)
-		
-		# Explicitly refresh UI label text
+		health_changed.emit(player_hp, enemy_hp)
+		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
 		
 		if not check_game_state():
@@ -323,7 +285,7 @@ func switch_turn() -> void:
 		player_cash_out_locked = false
 		set_player_controls_enabled(false)
 		if enemy_ai:
-			enemy_ai.take_turn(current_base_value, current_combo_damage, player_current_health, enemy_cash_out_locked)
+			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_locked)
 
 func set_player_controls_enabled(enabled: bool) -> void:
 	higher_button.disabled = not enabled
@@ -331,13 +293,12 @@ func set_player_controls_enabled(enabled: bool) -> void:
 	cash_out_button.disabled = not enabled or player_cash_out_locked
 	pass_button.disabled = not enabled
 	
-	# Trump buttons are only usable during Player's turn
 	if enabled and is_player_turn:
-		chains_button.disabled = chains_used
-		executioner_button.disabled = executioner_used
-		vision_button.disabled = vision_used
-		sacrifice_button.disabled = sacrifice_used
-		mirror_button.disabled = mirror_used
+		chains_button.disabled = chains_trump.is_used
+		executioner_button.disabled = executioner_trump.is_used
+		vision_button.disabled = vision_trump.is_used
+		sacrifice_button.disabled = sacrifice_trump.is_used
+		mirror_button.disabled = mirror_trump.is_used
 	else:
 		chains_button.disabled = true
 		executioner_button.disabled = true
@@ -345,15 +306,15 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		sacrifice_button.disabled = true
 		mirror_button.disabled = true
 
-# 8. Helper functions to update UI labels cleanly
-func _on_health_changed(player_hp: int, enemy_hp: int) -> void:
-	health_label.text = "PLAYER HP: " + str(player_hp) + " | ENTITY HP: " + str(enemy_hp)
+# Helper functions to update UI labels cleanly
+func _on_health_changed(p_hp: int, e_hp: int) -> void:
+	health_label.text = "PLAYER HP: " + str(p_hp) + " | ENTITY HP: " + str(e_hp)
 
 func _on_combo_updated(current_combo: int) -> void:
 	combo_label.text = "CURRENT STAKE: " + str(current_combo) + " HP"
 
 func _update_base_card_ui() -> void:
-	base_card_label.text = "CARD VALUE: " + str(current_base_value)
+	base_card_label.text = "CARD VALUE: " + str(active_card)
 
 func _update_turn_label() -> void:
 	if is_player_turn:
@@ -370,10 +331,10 @@ func _on_game_over(winner_name: String) -> void:
 
 # Returns true if the game is over
 func check_game_state() -> bool:
-	if player_current_health <= 0:
+	if player_hp <= 0:
 		game_over.emit("Entity")
 		return true
-	elif enemy_current_health <= 0:
+	elif enemy_hp <= 0:
 		game_over.emit("Player")
 		return true
 	return false
