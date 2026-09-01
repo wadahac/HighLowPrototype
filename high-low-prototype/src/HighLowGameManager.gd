@@ -130,9 +130,8 @@ func restart_match() -> void:
 
 func rebuild_deck() -> void:
 	deck.clear()
-	# Generate exactly 13 unique values (1 through 13)
-	for i in range(1, 14):
-		deck.append(i)
+	# Strictly 1 through 13 integers
+	deck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 	deck.shuffle()
 
 func rebuild_and_reshuffle_deck() -> void:
@@ -151,7 +150,7 @@ func draw_card() -> int:
 		rebuild_and_reshuffle_deck()
 		was_reshuffled_on_last_draw = true
 	
-	var card = deck.pop_front()
+	var card: int = deck.pop_front()
 	
 	# Ensure drawn card is not identical to active_card sitting on table
 	if card == active_card and not deck.is_empty():
@@ -250,7 +249,7 @@ func process_guess(is_higher: bool) -> void:
 	if is_correct:
 		if not is_tie:
 			current_streak += 1
-			shared_pot += int(pow(2, current_streak - 1))
+			shared_pot += 1
 		active_card = new_card
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
