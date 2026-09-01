@@ -73,7 +73,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	# --- DEBUFF CHECK ---
 	if enemy_cash_out_and_pass_locked:
 		if manager.status_label:
-			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.upper()]
+			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
 		decision_made.emit(best_choice)
 		return
 
@@ -87,7 +87,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 			vision_choice = "lower"
 		
 		if manager.status_label:
-			manager.status_label.text = "Enemy uses Prophetic Vision foresight (100%% win rate) and guesses %s!" % vision_choice.upper()
+			manager.status_label.text = "Enemy uses Prophetic Vision foresight (100%% win rate) and guesses %s!" % vision_choice.to_upper()
 		manager.known_future_3rd_card = -1
 		decision_made.emit(vision_choice)
 		return
@@ -137,5 +137,5 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 
 	# --- FINAL DECISION EMISSION ---
 	if manager.status_label:
-		manager.status_label.text = "Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.upper()]
+		manager.status_label.text = "Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
 	decision_made.emit(best_choice)
