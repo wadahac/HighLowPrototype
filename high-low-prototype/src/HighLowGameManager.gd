@@ -21,6 +21,9 @@ var enemy_cash_out_and_pass_locked: bool = false
 var player_cash_out_and_pass_locked: bool = false
 var mirror_active: bool = false
 
+# Reshuffle Tracking Flag
+var was_reshuffled_on_last_draw: bool = false
+
 # Trump Instances
 var chains_trump = preload("res://src/trumps/ChainsOfFate.gd").new()
 var executioner_trump = preload("res://src/trumps/Executioner.gd").new()
@@ -88,6 +91,7 @@ func start_new_match() -> void:
 	enemy_cash_out_and_pass_locked = false
 	player_cash_out_and_pass_locked = false
 	mirror_active = false
+	was_reshuffled_on_last_draw = false
 	
 	chains_trump.is_used = false
 	executioner_trump.is_used = false
@@ -130,12 +134,15 @@ func rebuild_and_reshuffle_deck() -> void:
 	rebuild_deck()
 	if active_card in deck:
 		deck.erase(active_card)
+	print("[DECK] Reshuffled 13-card deck.")
 	if status_label:
-		status_label.text = "Deck reshuffled with remaining cards!"
+		status_label.text = "DECK RESHUFFLED! (Strategic 13-card pool refreshed)"
 
 func draw_card() -> int:
+	was_reshuffled_on_last_draw = false
 	if deck.size() < 3:
 		rebuild_and_reshuffle_deck()
+		was_reshuffled_on_last_draw = true
 	
 	var card = deck.pop_front()
 	
@@ -204,7 +211,8 @@ func _on_enemy_decision_made(choice: String) -> void:
 	if choice == "cash_out":
 		cash_out()
 	elif choice == "pass":
-		status_label.text = "Enemy passed the turn."
+		if status_label:
+			status_label.text = "Enemy passed the turn."
 		switch_turn()
 	else:
 		process_guess(choice == "higher")
@@ -215,6 +223,7 @@ func _on_enemy_decision_made(choice: String) -> void:
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
 	var new_card: int = draw_card()
+	var is_reshuffled: bool = was_reshuffled_on_last_draw
 	var is_correct: bool = false
 	var is_tie: bool = (new_card == active_card)
 	
@@ -232,12 +241,24 @@ func process_guess(is_higher: bool) -> void:
 		active_card = new_card
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
+		
+		if is_reshuffled and status_label:
+			var prefix = "Deck reshuffled! " if not status_label.text.begins_with("DECK RESHUFFLED!") else status_label.text + " | "
+			if is_player_turn:
+				status_label.text = prefix + "Player guessed correctly!"
+			else:
+				status_label.text = prefix + "Enemy guessed correctly!"
+
 		if not check_game_state():
 			if is_player_turn:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
 	else:
 		var damage: int = max(1, shared_pot)
+		var text_prefix = ""
+		if is_reshuffled:
+			text_prefix = "DECK RESHUFFLED! "
+			
 		if is_player_turn:
 			if mirror_active:
 				var reflected_damage = int(damage * 0.5)
@@ -245,9 +266,11 @@ func process_guess(is_higher: bool) -> void:
 				player_hp = max(0, player_hp - self_damage)
 				enemy_hp = max(0, enemy_hp - reflected_damage)
 				mirror_active = false
-				status_label.text = "Mirror Shard reflected " + str(reflected_damage) + " damage!"
+				status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
 				player_hp = max(0, player_hp - damage)
+				if is_reshuffled and status_label:
+					status_label.text = text_prefix + "Player guessed incorrectly!"
 		else:
 			if mirror_active:
 				var reflected_damage = int(damage * 0.5)
@@ -255,9 +278,11 @@ func process_guess(is_higher: bool) -> void:
 				enemy_hp = max(0, enemy_hp - self_damage)
 				player_hp = max(0, player_hp - reflected_damage)
 				mirror_active = false
-				status_label.text = "Mirror Shard reflected " + str(reflected_damage) + " damage!"
+				status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
 				enemy_hp = max(0, enemy_hp - damage)
+				if is_reshuffled and status_label:
+					status_label.text = text_prefix + "Enemy guessed incorrectly!"
 			
 		shared_pot = 0
 		current_streak = 0
