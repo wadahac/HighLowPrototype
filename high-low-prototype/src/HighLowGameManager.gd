@@ -145,6 +145,11 @@ func draw_card() -> int:
 		enemy_ai.record_card_drawn(card)
 	return card
 
+func replace_active_card() -> int:
+	active_card = draw_card()
+	_update_base_card_ui()
+	return active_card
+
 # Button handlers
 func _on_higher_pressed() -> void:
 	if is_player_turn:
