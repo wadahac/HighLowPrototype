@@ -4,7 +4,7 @@ extends Node
 signal decision_made(choice: String)
 
 var used_cards: Array[int] = []
-var full_deck: Array[int] = []
+var vision_active: bool = false
 
 # Enemy single-use Trump card instances
 var chains_trump = preload("res://src/trumps/ChainsOfFate.gd").new()
@@ -14,15 +14,9 @@ var sacrifice_trump = preload("res://src/trumps/BloodSacrifice.gd").new()
 var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
 
 var trumps: Array = []
-var vision_active_this_turn: bool = false
-var vision_peeked_cards: Array = []
 
 func _ready() -> void:
 	trumps = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
-	# Initialize full deck with 4 copies of values 1 to 13
-	for i in range(1, 14):
-		for j in range(4):
-			full_deck.append(i)
 
 func reset_deck_memory() -> void:
 	used_cards.clear()
@@ -30,8 +24,7 @@ func reset_deck_memory() -> void:
 func reset_trumps() -> void:
 	for trump in trumps:
 		trump.is_used = false
-	vision_active_this_turn = false
-	vision_peeked_cards.clear()
+	vision_active = false
 
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
@@ -44,83 +37,105 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	if not manager:
 		return
 
-	# --- TRUMP CARD EVALUATION (BEFORE PRIMARY ACTION) ---
-	for trump in trumps:
-		if not trump.is_used and trump.can_enemy_use(manager, self):
-			trump.execute_enemy(manager, self)
-			if manager.check_game_state():
-				return
-			if trump == sacrifice_trump:
-				# Re-evaluate turn with the new card value
-				take_turn(manager.active_card, manager.shared_pot, manager.player_hp, enemy_cash_out_and_pass_locked)
-				return
-
-	# Update local variables in case they changed from Trumps
 	current_card_value = manager.active_card
 	current_stake = manager.shared_pot
 
-	# Lethal Cash-Out Check (only if not locked)
-	if not enemy_cash_out_and_pass_locked and current_stake >= player_hp and current_stake > 0:
-		decision_made.emit("cash_out")
-		return
-	
-	# Determine if we want to Pass (only if not locked)
-	var should_pass: bool = false
-	if should_pass and not enemy_cash_out_and_pass_locked:
-		# Chains of Fate check right before passing
-		if not chains_trump.is_used and chains_trump.can_enemy_use(manager, self):
-			chains_trump.execute_enemy(manager, self)
-		decision_made.emit("pass")
-		return
-
-	# Calculate remaining cards in the deck
-	var counts = {}
-	for v in range(1, 14):
-		counts[v] = 4
-		
-	for u in used_cards:
-		if u in counts:
-			counts[u] -= 1
-			
+	# --- EXACT PROBABILITY CALCULATION (CARD COUNTING) ---
 	var higher_count: int = 0
 	var lower_count: int = 0
-	
-	for v in range(1, 14):
-		var remaining_copies = max(0, counts[v])
-		if v > current_card_value:
-			higher_count += remaining_copies
-		elif v < current_card_value:
-			lower_count += remaining_copies
-			
-	var optimal_choice: String = "higher"
-	var worse_choice: String = "lower"
-	
-	if lower_count > higher_count:
-		optimal_choice = "lower"
-		worse_choice = "higher"
-	elif lower_count == higher_count:
-		if current_card_value <= 7:
-			optimal_choice = "higher"
-			worse_choice = "lower"
-		else:
-			optimal_choice = "lower"
-			worse_choice = "higher"
-			
-	var choice: String = optimal_choice
+	var total_remaining: int = manager.deck.size()
 
-	if vision_active_this_turn and not vision_peeked_cards.is_empty():
-		vision_active_this_turn = false
-		var next_card = vision_peeked_cards[0]
-		vision_peeked_cards.clear()
-		if next_card > current_card_value:
-			choice = "higher"
-		elif next_card < current_card_value:
-			choice = "lower"
+	for card in manager.deck:
+		if card > current_card_value:
+			higher_count += 1
+		elif card < current_card_value:
+			lower_count += 1
+
+	var higher_prob: float = float(higher_count) / float(max(1, total_remaining))
+	var lower_prob: float = float(lower_count) / float(max(1, total_remaining))
+
+	var best_choice: String = "higher"
+	var best_prob: float = higher_prob
+
+	if lower_prob > higher_prob:
+		best_choice = "lower"
+		best_prob = lower_prob
+	elif lower_prob == higher_prob:
+		if current_card_value <= 7:
+			best_choice = "higher"
+			best_prob = higher_prob
 		else:
-			choice = optimal_choice
-	else:
-		# Determine final choice with a 35% mistake chance
-		if randf() < 0.35:
-			choice = worse_choice
+			best_choice = "lower"
+			best_prob = lower_prob
+
+	var is_bad_card: bool = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
+
+	# --- DEBUFF CHECK ---
+	if enemy_cash_out_and_pass_locked:
+		if manager.status_label:
+			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.upper()]
+		decision_made.emit(best_choice)
+		return
+
+	# --- PROPHETIC VISION ADVANTAGE ---
+	if manager.prophetic_vision_turn_countdown == 0 and manager.known_future_3rd_card != -1:
+		var future_card = manager.known_future_3rd_card
+		var vision_choice: String = best_choice
+		if future_card > current_card_value:
+			vision_choice = "higher"
+		elif future_card < current_card_value:
+			vision_choice = "lower"
 		
-	decision_made.emit(choice)
+		if manager.status_label:
+			manager.status_label.text = "Enemy uses Prophetic Vision foresight (100%% win rate) and guesses %s!" % vision_choice.upper()
+		manager.known_future_3rd_card = -1
+		decision_made.emit(vision_choice)
+		return
+
+	# --- STRATEGIC TRUMP & DECISION TREE ---
+	# Lethal Cash-Out Check
+	if current_stake >= player_hp and current_stake > 0:
+		if manager.status_label:
+			manager.status_label.text = "Enemy sees lethal cash-out! Cashes out to win!"
+		decision_made.emit("cash_out")
+		return
+
+	# Bad Cards / Low Win % Strategic Responses
+	if is_bad_card:
+		# Chains of Fate + Pass
+		if not chains_trump.is_used and chains_trump.can_enemy_use(manager, self):
+			chains_trump.execute_enemy(manager, self)
+			if manager.status_label:
+				manager.status_label.text = "Enemy plays Chains of Fate and PASSES on a risky %d!" % current_card_value
+			decision_made.emit("pass")
+			return
+
+		# Blood Sacrifice to replace bad active card
+		if not sacrifice_trump.is_used and manager.enemy_hp > 4 and sacrifice_trump.can_enemy_use(manager, self):
+			sacrifice_trump.execute_enemy(manager, self)
+			take_turn(manager.active_card, manager.shared_pot, manager.player_hp, enemy_cash_out_and_pass_locked)
+			return
+
+		# Mirror Shard protection before taking a risky guess
+		if not mirror_trump.is_used and mirror_trump.can_enemy_use(manager, self):
+			mirror_trump.execute_enemy(manager, self)
+
+		# Cash out to protect existing pot
+		if current_stake >= 4:
+			if manager.status_label:
+				manager.status_label.text = "Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake
+			decision_made.emit("cash_out")
+			return
+
+	# Offensive Trumps for Good Cards / High Win %
+	if best_prob >= 0.60:
+		if not executioner_trump.is_used and current_stake >= 3 and executioner_trump.can_enemy_use(manager, self):
+			executioner_trump.execute_enemy(manager, self)
+
+		if not vision_trump.is_used and vision_trump.can_enemy_use(manager, self):
+			vision_trump.execute_enemy(manager, self)
+
+	# --- FINAL DECISION EMISSION ---
+	if manager.status_label:
+		manager.status_label.text = "Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.upper()]
+	decision_made.emit(best_choice)

@@ -20,6 +20,8 @@ var is_player_turn: bool = true
 var enemy_cash_out_and_pass_locked: bool = false
 var player_cash_out_and_pass_locked: bool = false
 var mirror_active: bool = false
+var known_future_3rd_card: int = -1
+var prophetic_vision_turn_countdown: int = -1
 
 # Reshuffle Tracking Flag
 var was_reshuffled_on_last_draw: bool = false
@@ -91,6 +93,8 @@ func start_new_match() -> void:
 	enemy_cash_out_and_pass_locked = false
 	player_cash_out_and_pass_locked = false
 	mirror_active = false
+	known_future_3rd_card = -1
+	prophetic_vision_turn_countdown = -1
 	was_reshuffled_on_last_draw = false
 	
 	chains_trump.is_used = false
@@ -134,6 +138,8 @@ func rebuild_and_reshuffle_deck() -> void:
 	rebuild_deck()
 	if active_card in deck:
 		deck.erase(active_card)
+	known_future_3rd_card = -1
+	prophetic_vision_turn_countdown = -1
 	print("[DECK] Reshuffled 13-card deck.")
 	if status_label:
 		status_label.text = "DECK RESHUFFLED! (Strategic 13-card pool refreshed)"
@@ -150,6 +156,11 @@ func draw_card() -> int:
 	if card == active_card and not deck.is_empty():
 		deck.append(card)
 		card = deck.pop_front()
+		
+	if prophetic_vision_turn_countdown > 0:
+		prophetic_vision_turn_countdown -= 1
+		if prophetic_vision_turn_countdown == 0 and vision_label:
+			vision_label.text = ""
 		
 	if enemy_ai:
 		enemy_ai.record_card_drawn(card)
@@ -318,7 +329,6 @@ func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	if is_player_turn:
-		vision_label.text = ""
 		mirror_active = false
 		enemy_cash_out_and_pass_locked = false
 		set_player_controls_enabled(true)
