@@ -67,7 +67,7 @@ func _ready() -> void:
 	lower_button.pressed.connect(_on_lower_pressed)
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
 	pass_button.pressed.connect(_on_pass_pressed)
-	restart_button.pressed.connect(restart_match)
+	restart_button.pressed.connect(reset_game)
 	
 	# Connect Trump buttons
 	chains_button.pressed.connect(_on_chains_pressed)
@@ -80,11 +80,10 @@ func _ready() -> void:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
 	
 	restart_button.hide()
-	start_new_match()
-	_update_base_card_ui()
+	reset_game()
 	print("GAME INITIALIZED SUCCESSFULLY")
 
-func start_new_match() -> void:
+func reset_game() -> void:
 	player_hp = player_max_health
 	enemy_hp = enemy_max_health
 	shared_pot = 0
@@ -106,7 +105,7 @@ func start_new_match() -> void:
 	if vision_label:
 		vision_label.text = ""
 	if status_label:
-		status_label.text = ""
+		status_label.text = "--- YOUR TURN ---"
 	
 	if enemy_ai:
 		enemy_ai.reset_deck_memory()
@@ -123,9 +122,11 @@ func start_new_match() -> void:
 	set_player_controls_enabled(true)
 	_update_base_card_ui()
 
+func start_new_match() -> void:
+	reset_game()
+
 func restart_match() -> void:
-	restart_button.hide()
-	start_new_match()
+	reset_game()
 
 func rebuild_deck() -> void:
 	deck.clear()
@@ -190,7 +191,8 @@ func _on_cash_out_pressed() -> void:
 func _on_pass_pressed() -> void:
 	if is_player_turn and not player_cash_out_and_pass_locked:
 		set_player_controls_enabled(false)
-		status_label.text = "Player passed the turn."
+		if status_label:
+			status_label.text = "Player passed the turn."
 		switch_turn()
 
 # Trump Card Handlers
@@ -260,7 +262,7 @@ func process_guess(is_higher: bool) -> void:
 			else:
 				status_label.text = prefix + "Enemy guessed correctly!"
 
-		if not check_game_state():
+		if not check_game_over():
 			if is_player_turn:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
@@ -277,7 +279,8 @@ func process_guess(is_higher: bool) -> void:
 				player_hp = max(0, player_hp - self_damage)
 				enemy_hp = max(0, enemy_hp - reflected_damage)
 				mirror_active = false
-				status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
+				if status_label:
+					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
 				player_hp = max(0, player_hp - damage)
 				if is_reshuffled and status_label:
@@ -289,7 +292,8 @@ func process_guess(is_higher: bool) -> void:
 				enemy_hp = max(0, enemy_hp - self_damage)
 				player_hp = max(0, player_hp - reflected_damage)
 				mirror_active = false
-				status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
+				if status_label:
+					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
 				enemy_hp = max(0, enemy_hp - damage)
 				if is_reshuffled and status_label:
@@ -303,7 +307,7 @@ func process_guess(is_higher: bool) -> void:
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
 		
-		if not check_game_state():
+		if not check_game_over():
 			await get_tree().create_timer(1.2).timeout
 			switch_turn()
 
@@ -321,7 +325,7 @@ func cash_out() -> void:
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
 		
-		if not check_game_state():
+		if not check_game_over():
 			await get_tree().create_timer(1.2).timeout
 			switch_turn()
 
@@ -332,11 +336,16 @@ func switch_turn() -> void:
 		mirror_active = false
 		enemy_cash_out_and_pass_locked = false
 		set_player_controls_enabled(true)
-		if player_cash_out_and_pass_locked:
-			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
+		if status_label:
+			if player_cash_out_and_pass_locked:
+				status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
+			else:
+				status_label.text = "--- YOUR TURN ---"
 	else:
 		player_cash_out_and_pass_locked = false
 		set_player_controls_enabled(false)
+		if status_label:
+			status_label.text = "--- ENEMY TURN ---"
 		if enemy_ai:
 			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
@@ -362,14 +371,39 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		sacrifice_button.disabled = true
 		mirror_button.disabled = true
 
-func check_game_state() -> bool:
+func check_game_over() -> bool:
 	if enemy_hp <= 0:
+		if status_label:
+			status_label.text = "YOU SURVIVED! YOU WIN!"
+		_disable_all_controls()
+		restart_button.show()
+		restart_button.disabled = false
 		game_over.emit("Player")
 		return true
 	elif player_hp <= 0:
+		if status_label:
+			status_label.text = "YOU DIED! GAME OVER"
+		_disable_all_controls()
+		restart_button.show()
+		restart_button.disabled = false
 		game_over.emit("Enemy")
 		return true
 	return false
+
+func check_game_state() -> bool:
+	return check_game_over()
+
+func _disable_all_controls() -> void:
+	set_player_controls_enabled(false)
+	higher_button.disabled = true
+	lower_button.disabled = true
+	cash_out_button.disabled = true
+	pass_button.disabled = true
+	chains_button.disabled = true
+	executioner_button.disabled = true
+	vision_button.disabled = true
+	sacrifice_button.disabled = true
+	mirror_button.disabled = true
 
 func _update_base_card_ui() -> void:
 	var names = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
@@ -394,11 +428,6 @@ func _on_combo_updated(c_combo: int) -> void:
 		combo_label.text = "Shared Pot: " + str(c_combo)
 
 func _on_game_over(winner: String) -> void:
-	set_player_controls_enabled(false)
-	if status_label:
-		if winner == "Player":
-			status_label.text = "YOU SURVIVED! YOU WIN!"
-		else:
-			status_label.text = "YOU DIED! GAME OVER"
+	_disable_all_controls()
 	restart_button.show()
 	restart_button.disabled = false
