@@ -15,6 +15,7 @@ var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
 
 var trumps: Array = []
 var vision_active_this_turn: bool = false
+var vision_peeked_cards: Array = []
 
 func _ready() -> void:
 	trumps = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
@@ -30,6 +31,7 @@ func reset_trumps() -> void:
 	for trump in trumps:
 		trump.is_used = false
 	vision_active_this_turn = false
+	vision_peeked_cards.clear()
 
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
@@ -106,11 +108,10 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 			
 	var choice: String = optimal_choice
 
-	if vision_active_this_turn:
+	if vision_active_this_turn and not vision_peeked_cards.is_empty():
 		vision_active_this_turn = false
-		if manager.deck.is_empty():
-			manager.rebuild_deck()
-		var next_card = manager.deck[manager.deck.size() - 1]
+		var next_card = vision_peeked_cards[0]
+		vision_peeked_cards.clear()
 		if next_card > current_card_value:
 			choice = "higher"
 		elif next_card < current_card_value:

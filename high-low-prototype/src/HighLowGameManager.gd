@@ -126,13 +126,16 @@ func rebuild_deck() -> void:
 		deck.append(i)
 	deck.shuffle()
 
+func rebuild_and_reshuffle_deck() -> void:
+	rebuild_deck()
+	if active_card in deck:
+		deck.erase(active_card)
+	if status_label:
+		status_label.text = "Deck reshuffled with remaining cards!"
+
 func draw_card() -> int:
 	if deck.size() < 3:
-		rebuild_deck()
-		if active_card in deck:
-			deck.erase(active_card)
-		if status_label:
-			status_label.text = "Deck reshuffled with remaining cards!"
+		rebuild_and_reshuffle_deck()
 	
 	var card = deck.pop_front()
 	
