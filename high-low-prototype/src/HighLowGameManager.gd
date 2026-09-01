@@ -105,7 +105,7 @@ func reset_game() -> void:
 	if vision_label:
 		vision_label.text = ""
 	if status_label:
-		status_label.text = "--- YOUR TURN ---"
+		status_label.text = ""
 	
 	if enemy_ai:
 		enemy_ai.reset_deck_memory()
@@ -336,16 +336,11 @@ func switch_turn() -> void:
 		mirror_active = false
 		enemy_cash_out_and_pass_locked = false
 		set_player_controls_enabled(true)
-		if status_label:
-			if player_cash_out_and_pass_locked:
-				status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
-			else:
-				status_label.text = "--- YOUR TURN ---"
+		if player_cash_out_and_pass_locked and status_label:
+			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
 	else:
 		player_cash_out_and_pass_locked = false
 		set_player_controls_enabled(false)
-		if status_label:
-			status_label.text = "--- ENEMY TURN ---"
 		if enemy_ai:
 			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
@@ -415,9 +410,9 @@ func _update_base_card_ui() -> void:
 func _update_turn_label() -> void:
 	if turn_label:
 		if is_player_turn:
-			turn_label.text = "--- YOUR TURN ---"
+			turn_label.text = "YOUR TURN"
 		else:
-			turn_label.text = "Enemy Turn"
+			turn_label.text = "ENEMY TURN"
 
 func _on_health_changed(p_hp: int, e_hp: int) -> void:
 	if health_label:
