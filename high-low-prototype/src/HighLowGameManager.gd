@@ -111,6 +111,7 @@ func start_new_match() -> void:
 	rebuild_deck()
 	active_card = draw_card()
 	
+	restart_button.hide()
 	set_player_controls_enabled(true)
 	_update_base_card_ui()
 
@@ -120,40 +121,26 @@ func restart_match() -> void:
 
 func rebuild_deck() -> void:
 	deck.clear()
-	# Generate a full 52-card deck (4 copies of values 1 to 13)
+	# Generate exactly 13 unique values (1 through 13)
 	for i in range(1, 14):
-		for j in range(4):
-			deck.append(i)
+		deck.append(i)
 	deck.shuffle()
 
 func draw_card() -> int:
 	if deck.size() < 3:
 		rebuild_deck()
-		status_label.text = "Deck reshuffled with fresh cards!"
+		if active_card in deck:
+			deck.erase(active_card)
+		if status_label:
+			status_label.text = "Deck reshuffled with remaining cards!"
 	
-	var card_index = deck.size() - 1
-	var card = deck[card_index]
+	var card = deck.pop_front()
 	
-	# Ensure the next drawn card value is NEVER identical to active_card
-	if card == active_card:
-		var found_alternative = false
-		for i in range(deck.size() - 2, -1, -1):
-			if deck[i] != active_card:
-				# Swap the identical card with a unique one deeper in the deck
-				var temp = deck[i]
-				deck[i] = deck[card_index]
-				deck[card_index] = temp
-				card = deck[card_index]
-				found_alternative = true
-				break
+	# Ensure drawn card is not identical to active_card sitting on table
+	if card == active_card and not deck.is_empty():
+		deck.append(card)
+		card = deck.pop_front()
 		
-		# If no alternative is found (e.g. all remaining cards are identical), rebuild early
-		if not found_alternative:
-			rebuild_deck()
-			status_label.text = "Deck reshuffled with fresh cards!"
-			return draw_card()
-			
-	deck.pop_back()
 	if enemy_ai:
 		enemy_ai.record_card_drawn(card)
 	return card
@@ -333,11 +320,11 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		mirror_button.disabled = true
 
 func check_game_state() -> bool:
-	if player_hp <= 0:
-		game_over.emit("Enemy")
-		return true
-	elif enemy_hp <= 0:
+	if enemy_hp <= 0:
 		game_over.emit("Player")
+		return true
+	elif player_hp <= 0:
+		game_over.emit("Enemy")
 		return true
 	return false
 
@@ -351,7 +338,7 @@ func _update_base_card_ui() -> void:
 func _update_turn_label() -> void:
 	if turn_label:
 		if is_player_turn:
-			turn_label.text = "Your Turn"
+			turn_label.text = "--- YOUR TURN ---"
 		else:
 			turn_label.text = "Enemy Turn"
 
@@ -366,5 +353,9 @@ func _on_combo_updated(c_combo: int) -> void:
 func _on_game_over(winner: String) -> void:
 	set_player_controls_enabled(false)
 	if status_label:
-		status_label.text = "Game Over! " + winner + " Wins!"
+		if winner == "Player":
+			status_label.text = "YOU SURVIVED! YOU WIN!"
+		else:
+			status_label.text = "YOU DIED! GAME OVER"
 	restart_button.show()
+	restart_button.disabled = false
