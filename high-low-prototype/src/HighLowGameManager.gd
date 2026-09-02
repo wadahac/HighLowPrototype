@@ -209,7 +209,6 @@ func _on_pass_pressed() -> void:
 			status_label.text = "Player passed the turn."
 		switch_turn()
 
-<<<<<<< HEAD
 # Reuse Existing UI Buttons (Do NOT Create New Nodes)
 func update_trump_ui() -> void:
 	var container = $UI_Layer/TrumpContainer
@@ -258,8 +257,6 @@ func _on_trump_button_pressed(trump) -> void:
 	update_trump_ui()
 	set_player_controls_enabled(is_player_turn)
 
-=======
->>>>>>> parent of 01b275f (refactor: implement dynamic trump UI and fix soul thievery)
 # Trump Card Handlers
 func _on_chains_pressed() -> void:
 	chains_trump.execute_player(self)
