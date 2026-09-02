@@ -19,6 +19,7 @@ var is_player_turn: bool = true
 # Trump Card State
 var enemy_cash_out_and_pass_locked: bool = false
 var player_cash_out_and_pass_locked: bool = false
+var chains_lock_duration: int = 0
 var chains_locked_turns: int = 0
 var mirror_active: bool = false
 var known_future_3rd_card: int = -1
@@ -85,11 +86,6 @@ func _ready() -> void:
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
 	
-	# Connect StealButton
-	var steal_btn = $UI_Layer/TrumpContainer/StealButton
-	if steal_btn:
-		steal_btn.pressed.connect(_on_steal_button_pressed)
-	
 	restart_button.hide()
 	reset_game()
 	print("GAME INITIALIZED SUCCESSFULLY")
@@ -102,6 +98,7 @@ func reset_game() -> void:
 	is_player_turn = true
 	enemy_cash_out_and_pass_locked = false
 	player_cash_out_and_pass_locked = false
+	chains_lock_duration = 0
 	chains_locked_turns = 0
 	mirror_active = false
 	known_future_3rd_card = -1
@@ -281,6 +278,7 @@ func _on_mirror_pressed() -> void:
 func _on_steal_button_pressed() -> void:
 	steal_trump.apply_effect(self, enemy_ai, self)
 	steal_button.disabled = true
+	update_trump_ui()
 	_update_base_card_ui()
 	if status_label:
 		status_label.text = "Player activated Soul Thievery!"
@@ -408,9 +406,9 @@ func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	
-	if chains_locked_turns > 0:
-		chains_locked_turns -= 1
-		if chains_locked_turns == 0:
+	if chains_lock_duration > 0:
+		chains_lock_duration -= 1
+		if chains_lock_duration == 0:
 			player_cash_out_and_pass_locked = false
 			enemy_cash_out_and_pass_locked = false
 	
