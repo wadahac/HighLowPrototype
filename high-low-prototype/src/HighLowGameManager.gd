@@ -208,39 +208,65 @@ func _on_pass_pressed() -> void:
 
 # Reuse Existing UI Buttons (Do NOT Create New Nodes)
 func update_trump_ui() -> void:
+	refresh_trump_ui()
+
+func refresh_trump_ui() -> void:
 	var container = $UI_Layer/TrumpContainer
 	if not container:
 		return
 		
 	var buttons = container.get_children()
 	var steal_btn = $UI_Layer/TrumpContainer/StealButton
+	
+	# Filter out steal button
+	var trump_buttons = []
+	for btn in buttons:
+		if btn != steal_btn:
+			trump_buttons.append(btn)
+			
+	# We want to map each unused trump in trumps_hand to a button
+	var active_trumps = []
+	for t in trumps_hand:
+		if not t.is_used:
+			active_trumps.append(t)
+			
 	var assigned_buttons = []
 	
-	# Map player's trumps to existing buttons in TrumpContainer
-	for trump in trumps_hand:
+	# 1. Try to match by name first
+	for trump in active_trumps:
 		var trump_name = trump.get_script().get_path().get_file().get_basename()
 		var found_btn = null
-		for btn in buttons:
-			if btn == steal_btn:
-				continue
+		for btn in trump_buttons:
 			if btn in assigned_buttons:
 				continue
 			if trump_name.to_lower() in btn.name.to_lower() or btn.name.to_lower() in trump_name.to_lower():
 				found_btn = btn
 				break
-				
 		if found_btn:
 			assigned_buttons.append(found_btn)
-			found_btn.visible = true
-			found_btn.disabled = trump.is_used or not is_player_turn
-			if found_btn.pressed.is_connected(_on_trump_button_pressed):
-				found_btn.pressed.disconnect(_on_trump_button_pressed)
-			found_btn.pressed.connect(_on_trump_button_pressed.bind(trump))
+			_setup_trump_button(found_btn, trump)
 			
-	# Hide and disable any other buttons that are not currently in the player's hand
-	for btn in buttons:
-		if btn == steal_btn:
+	# 2. Assign remaining active trumps to any leftover buttons
+	for trump in active_trumps:
+		var already_assigned = false
+		for btn in assigned_buttons:
+			if btn.pressed.is_connected(_on_trump_button_pressed.bind(trump)):
+				already_assigned = true
+				break
+		if already_assigned:
 			continue
+			
+		var leftover_btn = null
+		for btn in trump_buttons:
+			if not btn in assigned_buttons:
+				leftover_btn = btn
+				break
+		if leftover_btn:
+			assigned_buttons.append(leftover_btn)
+			_setup_trump_button(leftover_btn, trump)
+			
+	# 3. Hide/disable all unassigned buttons
+	for btn in trump_buttons:
 		if not btn in assigned_buttons:
 			btn.visible = false
 			btn.disabled = true
@@ -248,6 +274,19 @@ func update_trump_ui() -> void:
 	if steal_btn:
 		steal_btn.visible = true
 		steal_btn.disabled = not is_player_turn
+
+func _setup_trump_button(btn: Button, trump) -> void:
+	btn.visible = true
+	btn.disabled = not is_player_turn
+	var trump_name = trump.get_script().get_path().get_file().get_basename()
+	var display_name = trump.card_name if "card_name" in trump else trump_name
+	btn.text = display_name
+	
+	# Clear old connections
+	for conn in btn.pressed.get_connections():
+		btn.pressed.disconnect(conn.callable)
+		
+	btn.pressed.connect(_on_trump_button_pressed.bind(trump))
 
 func _on_trump_button_pressed(trump) -> void:
 	trump.execute_player(self)
@@ -276,11 +315,17 @@ func _on_mirror_pressed() -> void:
 	set_player_controls_enabled(true)
 
 func _on_steal_button_pressed() -> void:
-	steal_trump.apply_effect(self, enemy_ai, self)
-	update_trump_ui()
+	var stolen_trump = steal_trump.apply_effect(self, enemy_ai, self)
+	if stolen_trump:
+		var card_name = stolen_trump.card_name if "card_name" in stolen_trump else stolen_trump.get_script().get_path().get_file().get_basename()
+		print("STOLE TRUMP: Stole ", card_name)
+		if status_label:
+			status_label.text = "Player stole " + card_name + "!"
+	else:
+		if status_label:
+			status_label.text = "Player tried to steal, but enemy has no Trumps!"
+	refresh_trump_ui()
 	_update_base_card_ui()
-	if status_label:
-		status_label.text = "Player activated Soul Thievery!"
 
 func trigger_juice_effect(effect_name: String) -> void:
 	print("Juice effect triggered: ", effect_name)
@@ -441,12 +486,8 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		cash_out_button.disabled = player_cash_out_and_pass_locked or shared_pot == 0
 		pass_button.disabled = player_cash_out_and_pass_locked
 		
-		chains_button.disabled = chains_trump.is_used
-		executioner_button.disabled = executioner_trump.is_used
-		vision_button.disabled = vision_trump.is_used
-		sacrifice_button.disabled = sacrifice_trump.is_used
-		mirror_button.disabled = mirror_trump.is_used
-		steal_button.disabled = false
+		# Update Trump buttons state
+		refresh_trump_ui()
 	else:
 		cash_out_button.disabled = true
 		pass_button.disabled = true
