@@ -247,7 +247,7 @@ func update_trump_ui() -> void:
 			
 	if steal_btn:
 		steal_btn.visible = true
-		steal_btn.disabled = steal_trump.is_used or not is_player_turn
+		steal_btn.disabled = not is_player_turn
 
 func _on_trump_button_pressed(trump) -> void:
 	trump.execute_player(self)
@@ -277,7 +277,6 @@ func _on_mirror_pressed() -> void:
 
 func _on_steal_button_pressed() -> void:
 	steal_trump.apply_effect(self, enemy_ai, self)
-	steal_button.disabled = true
 	update_trump_ui()
 	_update_base_card_ui()
 	if status_label:
@@ -447,7 +446,7 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		vision_button.disabled = vision_trump.is_used
 		sacrifice_button.disabled = sacrifice_trump.is_used
 		mirror_button.disabled = mirror_trump.is_used
-		steal_button.disabled = steal_trump.is_used
+		steal_button.disabled = false
 	else:
 		cash_out_button.disabled = true
 		pass_button.disabled = true
