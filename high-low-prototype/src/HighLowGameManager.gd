@@ -215,104 +215,89 @@ func refresh_trump_ui() -> void:
 	if not container:
 		return
 		
-	var buttons = container.get_children()
-	var steal_btn = $UI_Layer/TrumpContainer/StealButton
+	# Check which types of trumps are currently active (not used) in the player's hand
+	var has_chains = false
+	var has_executioner = false
+	var has_vision = false
+	var has_sacrifice = false
+	var has_mirror = false
 	
-	# Filter out steal button
-	var trump_buttons = []
-	for btn in buttons:
-		if btn != steal_btn:
-			trump_buttons.append(btn)
-			
-	# We want to map each unused trump in trumps_hand to a button
-	var active_trumps = []
-	for t in trumps_hand:
-		if not t.is_used:
-			active_trumps.append(t)
-			
-	var assigned_buttons = []
-	
-	# 1. Try to match by name first
-	for trump in active_trumps:
-		var trump_name = trump.get_script().get_path().get_file().get_basename()
-		var found_btn = null
-		for btn in trump_buttons:
-			if btn in assigned_buttons:
-				continue
-			if trump_name.to_lower() in btn.name.to_lower() or btn.name.to_lower() in trump_name.to_lower():
-				found_btn = btn
-				break
-		if found_btn:
-			assigned_buttons.append(found_btn)
-			_setup_trump_button(found_btn, trump)
-			
-	# 2. Assign remaining active trumps to any leftover buttons
-	for trump in active_trumps:
-		var already_assigned = false
-		for btn in assigned_buttons:
-			if btn.pressed.is_connected(_on_trump_button_pressed.bind(trump)):
-				already_assigned = true
-				break
-		if already_assigned:
-			continue
-			
-		var leftover_btn = null
-		for btn in trump_buttons:
-			if not btn in assigned_buttons:
-				leftover_btn = btn
-				break
-		if leftover_btn:
-			assigned_buttons.append(leftover_btn)
-			_setup_trump_button(leftover_btn, trump)
-			
-	# 3. Hide/disable all unassigned buttons
-	for btn in trump_buttons:
-		if not btn in assigned_buttons:
-			btn.visible = false
-			btn.disabled = true
-			
-	if steal_btn:
-		steal_btn.visible = true
-		steal_btn.disabled = not is_player_turn
+	for trump in trumps_hand:
+		if not trump.is_used:
+			var file_name = trump.get_script().get_path().get_file().get_basename().to_lower()
+			if "chainsoffate" in file_name or "chains" in file_name:
+				has_chains = true
+			elif "executioner" in file_name:
+				has_executioner = true
+			elif "propheticvision" in file_name or "vision" in file_name:
+				has_vision = true
+			elif "bloodsacrifice" in file_name or "sacrifice" in file_name:
+				has_sacrifice = true
+			elif "mirrorshard" in file_name or "mirror" in file_name:
+				has_mirror = true
 
-func _setup_trump_button(btn: Button, trump) -> void:
-	btn.visible = true
-	btn.disabled = not is_player_turn
-	var trump_name = trump.get_script().get_path().get_file().get_basename()
-	var display_name = trump.card_name if "card_name" in trump else trump_name
-	btn.text = display_name
+	# Update button visibilities and disabled states dynamically
+	_update_button_state(chains_button, has_chains, chains_trump)
+	_update_button_state(executioner_button, has_executioner, executioner_trump)
+	_update_button_state(vision_button, has_vision, vision_trump)
+	_update_button_state(sacrifice_button, has_sacrifice, sacrifice_trump)
+	_update_button_state(mirror_button, has_mirror, mirror_trump)
 	
-	# Clear old connections
+	if steal_button:
+		steal_button.visible = not steal_trump.is_used
+		steal_button.disabled = not is_player_turn
+
+func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
+	if not btn:
+		return
+	btn.visible = has_trump
+	btn.disabled = not is_player_turn
+	
+	# Clear old connections to prevent duplicate triggers
 	for conn in btn.pressed.get_connections():
 		btn.pressed.disconnect(conn.callable)
 		
-	btn.pressed.connect(_on_trump_button_pressed.bind(trump))
+	if has_trump:
+		var display_name = default_trump.card_name if "card_name" in default_trump else btn.name
+		btn.text = display_name
+		
+		# Reconnect to the specific handler
+		if btn == chains_button:
+			btn.pressed.connect(_on_chains_pressed)
+		elif btn == executioner_button:
+			btn.pressed.connect(_on_executioner_pressed)
+		elif btn == vision_button:
+			btn.pressed.connect(_on_vision_pressed)
+		elif btn == sacrifice_button:
+			btn.pressed.connect(_on_sacrifice_pressed)
+		elif btn == mirror_button:
+			btn.pressed.connect(_on_mirror_pressed)
 
-func _on_trump_button_pressed(trump) -> void:
-	trump.execute_player(self)
-	update_trump_ui()
+func _use_trump_type(type_name: String) -> void:
+	for trump in trumps_hand:
+		if not trump.is_used:
+			var file_name = trump.get_script().get_path().get_file().get_basename().to_lower()
+			if type_name in file_name:
+				trump.execute_player(self)
+				break
+	refresh_trump_ui()
 	set_player_controls_enabled(is_player_turn)
 
 # Trump Card Handlers
 func _on_chains_pressed() -> void:
-	chains_trump.execute_player(self)
-	set_player_controls_enabled(true)
+	_use_trump_type("chains")
 
 func _on_executioner_pressed() -> void:
-	executioner_trump.execute_player(self)
-	set_player_controls_enabled(true)
+	_use_trump_type("executioner")
 
 func _on_vision_pressed() -> void:
-	vision_trump.execute_player(self)
-	set_player_controls_enabled(true)
+	_use_trump_type("vision")
 
 func _on_sacrifice_pressed() -> void:
-	sacrifice_trump.execute_player(self)
-	set_player_controls_enabled(true)
+	_use_trump_type("sacrifice")
 
 func _on_mirror_pressed() -> void:
-	mirror_trump.execute_player(self)
-	set_player_controls_enabled(true)
+	_use_trump_type("mirror")
 
 func _on_steal_button_pressed() -> void:
 	var stolen_trump = steal_trump.apply_effect(self, enemy_ai, self)
