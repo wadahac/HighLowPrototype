@@ -32,6 +32,9 @@ var executioner_trump = preload("res://src/trumps/Executioner.gd").new()
 var vision_trump = preload("res://src/trumps/PropheticVision.gd").new()
 var sacrifice_trump = preload("res://src/trumps/BloodSacrifice.gd").new()
 var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
+var steal_trump = preload("res://src/trumps/SoulThievery.gd").new()
+
+var trumps_hand: Array = []
 
 # 3. @onready variables targeting exact relative paths
 @onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
@@ -50,6 +53,7 @@ var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
 @onready var vision_button: Button = $"UI_Layer/TrumpContainer/VisionButton"
 @onready var sacrifice_button: Button = $"UI_Layer/TrumpContainer/SacrificeButton"
 @onready var mirror_button: Button = $"UI_Layer/TrumpContainer/MirrorButton"
+@onready var steal_button: Button = $"UI_Layer/TrumpContainer/StealButton"
 
 # Info Labels
 @onready var vision_label: Label = $"UI_Layer/InfoPanel/VisionLabel"
@@ -75,6 +79,7 @@ func _ready() -> void:
 	vision_button.pressed.connect(_on_vision_pressed)
 	sacrifice_button.pressed.connect(_on_sacrifice_pressed)
 	mirror_button.pressed.connect(_on_mirror_pressed)
+	steal_button.pressed.connect(_on_steal_button_pressed)
 	
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
@@ -101,6 +106,9 @@ func reset_game() -> void:
 	vision_trump.is_used = false
 	sacrifice_trump.is_used = false
 	mirror_trump.is_used = false
+	steal_trump.is_used = false
+	
+	trumps_hand = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
 	
 	if vision_label:
 		vision_label.text = ""
@@ -214,6 +222,18 @@ func _on_sacrifice_pressed() -> void:
 func _on_mirror_pressed() -> void:
 	mirror_trump.execute_player(self)
 	set_player_controls_enabled(true)
+
+func _on_steal_button_pressed() -> void:
+	steal_trump.apply_effect(self, enemy_ai, self)
+	steal_button.disabled = true
+	_update_base_card_ui()
+	if status_label:
+		status_label.text = "Player activated Soul Thievery!"
+
+func trigger_juice_effect(effect_name: String) -> void:
+	print("Juice effect triggered: ", effect_name)
+	if status_label:
+		status_label.text = "Juice effect: " + effect_name.to_upper()
 
 # AI Decision Handler
 func _on_enemy_decision_made(choice: String) -> void:
@@ -356,6 +376,7 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		vision_button.disabled = vision_trump.is_used
 		sacrifice_button.disabled = sacrifice_trump.is_used
 		mirror_button.disabled = mirror_trump.is_used
+		steal_button.disabled = steal_trump.is_used
 	else:
 		cash_out_button.disabled = true
 		pass_button.disabled = true
@@ -364,6 +385,7 @@ func set_player_controls_enabled(enabled: bool) -> void:
 		vision_button.disabled = true
 		sacrifice_button.disabled = true
 		mirror_button.disabled = true
+		steal_button.disabled = true
 
 func check_game_over() -> bool:
 	if enemy_hp <= 0:
@@ -398,6 +420,7 @@ func _disable_all_controls() -> void:
 	vision_button.disabled = true
 	sacrifice_button.disabled = true
 	mirror_button.disabled = true
+	steal_button.disabled = true
 
 func _update_base_card_ui() -> void:
 	var names = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]

@@ -14,9 +14,11 @@ var sacrifice_trump = preload("res://src/trumps/BloodSacrifice.gd").new()
 var mirror_trump = preload("res://src/trumps/MirrorShard.gd").new()
 
 var trumps: Array = []
+var trumps_hand: Array = []
 
 func _ready() -> void:
 	trumps = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
+	trumps_hand = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
 
 func reset_deck_memory() -> void:
 	used_cards.clear()
@@ -24,6 +26,7 @@ func reset_deck_memory() -> void:
 func reset_trumps() -> void:
 	for trump in trumps:
 		trump.is_used = false
+	trumps_hand = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
 	vision_active = false
 
 func record_card_drawn(card_value: int) -> void:
