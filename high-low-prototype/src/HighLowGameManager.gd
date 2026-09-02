@@ -53,7 +53,7 @@ var trumps_hand: Array = []
 @onready var vision_button: Button = $"UI_Layer/TrumpContainer/VisionButton"
 @onready var sacrifice_button: Button = $"UI_Layer/TrumpContainer/SacrificeButton"
 @onready var mirror_button: Button = $"UI_Layer/TrumpContainer/MirrorButton"
-@onready var steal_button: Button = $"UI_Layer/TrumpContainer/StealButton"
+@onready var steal_button = $UI_Layer/TrumpContainer/StealButton
 
 # Info Labels
 @onready var vision_label: Label = $"UI_Layer/InfoPanel/VisionLabel"
