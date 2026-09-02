@@ -48,6 +48,14 @@ var trumps_hand: Array = []
 @onready var pass_button: Button = $"UI_Layer/ButtonsContainer/PassButton"
 @onready var restart_button: Button = $UI_Layer/ButtonsContainer/RestartButton
 
+# Trump Buttons
+@onready var chains_button: Button = $"UI_Layer/TrumpContainer/ChainsButton"
+@onready var executioner_button: Button = $"UI_Layer/TrumpContainer/ExecutionerButton"
+@onready var vision_button: Button = $"UI_Layer/TrumpContainer/VisionButton"
+@onready var sacrifice_button: Button = $"UI_Layer/TrumpContainer/SacrificeButton"
+@onready var mirror_button: Button = $"UI_Layer/TrumpContainer/MirrorButton"
+@onready var steal_button = $UI_Layer/TrumpContainer/StealButton
+
 # Info Labels
 @onready var vision_label: Label = $"UI_Layer/InfoPanel/VisionLabel"
 @onready var status_label: Label = $"UI_Layer/InfoPanel/StatusLabel"
@@ -65,6 +73,14 @@ func _ready() -> void:
 	cash_out_button.pressed.connect(_on_cash_out_pressed)
 	pass_button.pressed.connect(_on_pass_pressed)
 	restart_button.pressed.connect(reset_game)
+	
+	# Connect Trump buttons
+	chains_button.pressed.connect(_on_chains_pressed)
+	executioner_button.pressed.connect(_on_executioner_pressed)
+	vision_button.pressed.connect(_on_vision_pressed)
+	sacrifice_button.pressed.connect(_on_sacrifice_pressed)
+	mirror_button.pressed.connect(_on_mirror_pressed)
+	steal_button.pressed.connect(_on_steal_button_pressed)
 	
 	if enemy_ai:
 		enemy_ai.decision_made.connect(_on_enemy_decision_made)
@@ -193,6 +209,7 @@ func _on_pass_pressed() -> void:
 			status_label.text = "Player passed the turn."
 		switch_turn()
 
+<<<<<<< HEAD
 # Reuse Existing UI Buttons (Do NOT Create New Nodes)
 func update_trump_ui() -> void:
 	var container = $UI_Layer/TrumpContainer
@@ -241,10 +258,32 @@ func _on_trump_button_pressed(trump) -> void:
 	update_trump_ui()
 	set_player_controls_enabled(is_player_turn)
 
+=======
+>>>>>>> parent of 01b275f (refactor: implement dynamic trump UI and fix soul thievery)
 # Trump Card Handlers
+func _on_chains_pressed() -> void:
+	chains_trump.execute_player(self)
+	set_player_controls_enabled(true)
+
+func _on_executioner_pressed() -> void:
+	executioner_trump.execute_player(self)
+	set_player_controls_enabled(true)
+
+func _on_vision_pressed() -> void:
+	vision_trump.execute_player(self)
+	set_player_controls_enabled(true)
+
+func _on_sacrifice_pressed() -> void:
+	sacrifice_trump.execute_player(self)
+	set_player_controls_enabled(true)
+
+func _on_mirror_pressed() -> void:
+	mirror_trump.execute_player(self)
+	set_player_controls_enabled(true)
+
 func _on_steal_button_pressed() -> void:
 	steal_trump.apply_effect(self, enemy_ai, self)
-	update_trump_ui()
+	steal_button.disabled = true
 	_update_base_card_ui()
 	if status_label:
 		status_label.text = "Player activated Soul Thievery!"
@@ -407,15 +446,22 @@ func set_player_controls_enabled(enabled: bool) -> void:
 	if enabled and is_player_turn:
 		cash_out_button.disabled = player_cash_out_and_pass_locked or shared_pot == 0
 		pass_button.disabled = player_cash_out_and_pass_locked
-		update_trump_ui()
+		
+		chains_button.disabled = chains_trump.is_used
+		executioner_button.disabled = executioner_trump.is_used
+		vision_button.disabled = vision_trump.is_used
+		sacrifice_button.disabled = sacrifice_trump.is_used
+		mirror_button.disabled = mirror_trump.is_used
+		steal_button.disabled = steal_trump.is_used
 	else:
 		cash_out_button.disabled = true
 		pass_button.disabled = true
-		var container = $"UI_Layer/TrumpContainer"
-		if container:
-			for child in container.get_children():
-				if child is Button:
-					child.disabled = true
+		chains_button.disabled = true
+		executioner_button.disabled = true
+		vision_button.disabled = true
+		sacrifice_button.disabled = true
+		mirror_button.disabled = true
+		steal_button.disabled = true
 
 func check_game_over() -> bool:
 	if enemy_hp <= 0:
@@ -445,6 +491,12 @@ func _disable_all_controls() -> void:
 	lower_button.disabled = true
 	cash_out_button.disabled = true
 	pass_button.disabled = true
+	chains_button.disabled = true
+	executioner_button.disabled = true
+	vision_button.disabled = true
+	sacrifice_button.disabled = true
+	mirror_button.disabled = true
+	steal_button.disabled = true
 
 func _update_base_card_ui() -> void:
 	base_card_label.text = str(active_card)
