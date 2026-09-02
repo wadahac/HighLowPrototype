@@ -250,7 +250,8 @@ func _on_enemy_decision_made(choice: String) -> void:
 		process_guess(choice == "higher")
 	
 	if not is_player_turn and player_hp > 0 and enemy_hp > 0:
-		enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
+		if enemy_ai and enemy_ai.can_act:
+			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -360,8 +361,20 @@ func switch_turn() -> void:
 	else:
 		player_cash_out_and_pass_locked = false
 		set_player_controls_enabled(false)
+		
 		if enemy_ai:
-			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
+			# Decrement turns_frozen counter
+			if enemy_ai.turns_frozen > 0:
+				enemy_ai.turns_frozen -= 1
+			if enemy_ai.turns_frozen <= 0:
+				enemy_ai.can_act = true
+			
+			if enemy_ai.can_act:
+				enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
+			else:
+				# If still frozen/cannot act, safely pass turn back to player to avoid hang
+				await get_tree().create_timer(1.0).timeout
+				switch_turn()
 
 func set_player_controls_enabled(enabled: bool) -> void:
 	higher_button.disabled = not enabled
@@ -423,11 +436,7 @@ func _disable_all_controls() -> void:
 	steal_button.disabled = true
 
 func _update_base_card_ui() -> void:
-	var names = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-	if active_card >= 1 and active_card <= 13:
-		base_card_label.text = names[active_card]
-	else:
-		base_card_label.text = str(active_card)
+	base_card_label.text = str(active_card)
 
 func _update_turn_label() -> void:
 	if turn_label:

@@ -6,6 +6,10 @@ signal decision_made(choice: String)
 var used_cards: Array[int] = []
 var vision_active: bool = false
 
+# Turn freeze / lock state
+var can_act: bool = true
+var turns_frozen: int = 0
+
 # Enemy single-use Trump card instances
 var chains_trump = preload("res://src/trumps/ChainsOfFate.gd").new()
 var executioner_trump = preload("res://src/trumps/Executioner.gd").new()
@@ -28,6 +32,8 @@ func reset_trumps() -> void:
 		trump.is_used = false
 	trumps_hand = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
 	vision_active = false
+	can_act = true
+	turns_frozen = 0
 
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
