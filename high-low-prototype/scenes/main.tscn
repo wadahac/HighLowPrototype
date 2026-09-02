@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dtgy32ffiy1h7" path="res://src/HighLowGameManager.gd" id="1_o5qli"]
 [ext_resource type="Script" uid="uid://bikflwn44ytxp" path="res://src/EnemyAI.gd" id="2_0wfyh"]
+[ext_resource type="Texture2D" uid="uid://dlf70ia2gimmb" path="res://assets/trumps/SoulThievery.png" id="2_sugp2"]
 
 [node name="Main" type="Node2D" unique_id=182343160]
 script = ExtResource("1_o5qli")
@@ -135,6 +136,10 @@ text = "Blood Sacrifice"
 [node name="MirrorButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=1947791960]
 layout_mode = 2
 text = "Mirror Shard"
+
+[node name="StealButton" type="TextureButton" parent="UI_Layer/TrumpContainer" unique_id=1536537628]
+layout_mode = 2
+texture_normal = ExtResource("2_sugp2")
 
 [node name="InfoPanel" type="VBoxContainer" parent="UI_Layer" unique_id=870315125]
 anchors_preset = 3
