@@ -80,7 +80,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	var is_bad_card: bool = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
 
 	# --- DEBUFF CHECK ---
-	if enemy_cash_out_and_pass_locked:
+	if enemy_cash_out_and_pass_locked or manager.enemy_cash_out_and_pass_locked:
 		if manager.status_label:
 			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
 		decision_made.emit(best_choice)

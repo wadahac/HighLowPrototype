@@ -241,12 +241,18 @@ func _on_lower_pressed() -> void:
 		process_guess(false)
 
 func _on_cash_out_pressed() -> void:
-	if is_player_turn and not player_cash_out_and_pass_locked:
+	if is_player_turn:
+		if player_cash_out_and_pass_locked:
+			print("Action locked by Chains of Fate")
+			return
 		set_player_controls_enabled(false)
 		cash_out()
 
 func _on_pass_pressed() -> void:
-	if is_player_turn and not player_cash_out_and_pass_locked:
+	if is_player_turn:
+		if player_cash_out_and_pass_locked:
+			print("Action locked by Chains of Fate")
+			return
 		set_player_controls_enabled(false)
 		if status_label:
 			status_label.text = "Player passed the turn."
@@ -369,8 +375,14 @@ func _on_enemy_decision_made(choice: String) -> void:
 		return
 	
 	if choice == "cash_out":
+		if enemy_cash_out_and_pass_locked:
+			print("Action locked by Chains of Fate")
+			return
 		cash_out()
 	elif choice == "pass":
+		if enemy_cash_out_and_pass_locked:
+			print("Action locked by Chains of Fate")
+			return
 		if status_label:
 			status_label.text = "Enemy passed the turn."
 		switch_turn()
@@ -477,6 +489,13 @@ func process_guess(is_higher: bool) -> void:
 
 # Cash out logic
 func cash_out() -> void:
+	if is_player_turn and player_cash_out_and_pass_locked:
+		print("Action locked by Chains of Fate")
+		return
+	if not is_player_turn and enemy_cash_out_and_pass_locked:
+		print("Action locked by Chains of Fate")
+		return
+
 	if shared_pot > 0:
 		if is_player_turn:
 			enemy_hp = max(0, enemy_hp - shared_pot)
