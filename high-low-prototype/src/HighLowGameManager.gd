@@ -90,7 +90,30 @@ func _ready() -> void:
 	reset_game()
 	print("GAME INITIALIZED SUCCESSFULLY")
 
+func get_card_texture(card_value: int) -> Texture2D:
+	var path = "res://assets/cards/card_%d.png" % card_value
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	var fallback_path = "res://high-low-prototype/assets/cards/card_%d.png" % card_value
+	if ResourceLoader.exists(fallback_path):
+		return load(fallback_path) as Texture2D
+	return null
+
+func get_card_back_texture() -> Texture2D:
+	var path = "res://assets/cards/card_back.png"
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	var fallback_path = "res://high-low-prototype/assets/cards/card_back.png"
+	if ResourceLoader.exists(fallback_path):
+		return load(fallback_path) as Texture2D
+	return null
+
 func reset_game() -> void:
+	if has_node("UI_Layer/Table/CardDisplay"):
+		var card_display = get_node("UI_Layer/Table/CardDisplay")
+		if card_display:
+			card_display.texture = get_card_back_texture()
+
 	player_hp = player_max_health
 	enemy_hp = enemy_max_health
 	shared_pot = 0
@@ -521,6 +544,10 @@ func _disable_all_controls() -> void:
 
 func _update_base_card_ui() -> void:
 	base_card_label.text = str(active_card)
+	if has_node("UI_Layer/Table/CardDisplay"):
+		var card_display = get_node("UI_Layer/Table/CardDisplay")
+		if card_display:
+			card_display.texture = get_card_texture(active_card)
 
 func _update_turn_label() -> void:
 	if turn_label:
