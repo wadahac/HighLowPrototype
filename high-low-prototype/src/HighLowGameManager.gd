@@ -434,6 +434,7 @@ func cash_out() -> void:
 func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
+	refresh_trump_ui()
 	
 	if chains_lock_duration > 0:
 		chains_lock_duration -= 1
