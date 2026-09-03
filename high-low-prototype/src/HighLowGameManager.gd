@@ -397,12 +397,13 @@ func _on_enemy_decision_made(choice: String) -> void:
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
+	var was_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
+	var pot_before_guess: int = shared_pot
+
 	var new_card: int = draw_card()
 	var is_reshuffled: bool = was_reshuffled_on_last_draw
 	var is_correct: bool = false
 	var is_tie: bool = (new_card == active_card)
-	
-	var was_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
 	
 	if is_tie:
 		is_correct = true
@@ -417,6 +418,7 @@ func process_guess(is_higher: bool) -> void:
 			shared_pot += 1
 		if was_chained:
 			shared_pot *= 2
+			print("Chained player guessed correctly! Pot doubled to: ", shared_pot)
 			if status_label:
 				status_label.text = ("Player" if is_player_turn else "Enemy") + " survived Chains of Fate! Pot doubled to " + str(shared_pot) + "!"
 		active_card = new_card
@@ -435,9 +437,10 @@ func process_guess(is_higher: bool) -> void:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
 	else:
-		var damage: int = max(1, shared_pot)
+		var base_damage: int = max(1, pot_before_guess)
+		var total_damage: int = base_damage * 2 if was_chained else base_damage
 		if was_chained:
-			damage = max(1, shared_pot * 2)
+			print("Chained player guessed incorrectly! Dealt double damage: ", total_damage)
 			
 		var text_prefix = ""
 		if is_reshuffled:
@@ -445,28 +448,28 @@ func process_guess(is_higher: bool) -> void:
 			
 		if is_player_turn:
 			if mirror_active:
-				var reflected_damage = int(damage * 0.5)
-				var self_damage = damage - reflected_damage
+				var reflected_damage = int(total_damage * 0.5)
+				var self_damage = total_damage - reflected_damage
 				player_hp = max(0, player_hp - self_damage)
 				enemy_hp = max(0, enemy_hp - reflected_damage)
 				mirror_active = false
 				if status_label:
 					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				player_hp = max(0, player_hp - damage)
+				player_hp = max(0, player_hp - total_damage)
 				if is_reshuffled and status_label:
 					status_label.text = text_prefix + "Player guessed incorrectly!"
 		else:
 			if mirror_active:
-				var reflected_damage = int(damage * 0.5)
-				var self_damage = damage - reflected_damage
+				var reflected_damage = int(total_damage * 0.5)
+				var self_damage = total_damage - reflected_damage
 				enemy_hp = max(0, enemy_hp - self_damage)
 				player_hp = max(0, player_hp - reflected_damage)
 				mirror_active = false
 				if status_label:
 					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				enemy_hp = max(0, enemy_hp - damage)
+				enemy_hp = max(0, enemy_hp - total_damage)
 				if is_reshuffled and status_label:
 					status_label.text = text_prefix + "Enemy guessed incorrectly!"
 			
