@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dtgy32ffiy1h7" path="res://src/HighLowGameManager.gd" id="1_o5qli"]
 [ext_resource type="Script" uid="uid://bikflwn44ytxp" path="res://src/EnemyAI.gd" id="2_0wfyh"]
+[ext_resource type="Texture2D" uid="uid://dm5lou6we6swy" path="res://assets/cards/card_7.png" id="2_jyhfs"]
 [ext_resource type="Texture2D" uid="uid://dlf70ia2gimmb" path="res://assets/trumps/SoulThievery.png" id="2_sugp2"]
 
 [node name="Main" type="Node2D" unique_id=182343160]
@@ -37,27 +38,13 @@ grow_horizontal = 2
 grow_vertical = 2
 metadata/_edit_use_anchors_ = true
 
-[node name="BaseCardLabel" type="Label" parent="UI_Layer/Table" unique_id=1226807319]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = -0.925
-anchor_top = -0.525
-anchor_right = 0.925
-anchor_bottom = -0.525
-offset_left = 24.0
-offset_top = 1.0
-offset_right = 64.0
-offset_bottom = 24.0
-text = "card number 7"
-metadata/_edit_use_anchors_ = true
-
 [node name="ComboLabel" type="Label" parent="UI_Layer/Table" unique_id=1642129600]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = -0.425
-anchor_top = -2.575
-anchor_right = 1.25
-anchor_bottom = -2.575
+anchor_left = -8.825
+anchor_top = -1.575
+anchor_right = -7.15
+anchor_bottom = -1.575
 offset_right = 40.0
 offset_bottom = 23.0
 text = "combo level 2"
@@ -66,10 +53,10 @@ metadata/_edit_use_anchors_ = true
 [node name="HealthLabel" type="Label" parent="UI_Layer/Table" unique_id=1089129879]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.125
-anchor_top = 1.425
-anchor_right = 0.7
-anchor_bottom = 1.425
+anchor_left = -6.85
+anchor_top = 1.8
+anchor_right = -6.275
+anchor_bottom = 1.8
 offset_right = 40.0
 offset_bottom = 23.0
 text = "health 7"
@@ -77,11 +64,27 @@ metadata/_edit_use_anchors_ = true
 
 [node name="turn" type="Label" parent="UI_Layer/Table" unique_id=1754259211]
 layout_mode = 0
-offset_left = -294.0
-offset_top = -42.0
-offset_right = -97.0
-offset_bottom = -19.0
+offset_left = -351.0
+offset_top = 1.0
+offset_right = -154.0
+offset_bottom = 24.0
 text = "temporary text label turn"
+
+[node name="CardDisplay" type="TextureRect" parent="UI_Layer/Table" unique_id=1350397349]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 8.025
+anchor_top = 0.05
+anchor_right = 8.025
+anchor_bottom = 0.05
+offset_left = -156.0
+offset_top = -156.0
+offset_right = 156.0
+offset_bottom = 156.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_jyhfs")
+metadata/_edit_use_anchors_ = true
 
 [node name="ButtonsContainer" type="HBoxContainer" parent="UI_Layer" unique_id=519503482]
 anchors_preset = 12
