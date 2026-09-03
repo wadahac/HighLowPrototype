@@ -16,6 +16,9 @@ var current_streak: int = 0
 var deck: Array[int] = []
 var is_player_turn: bool = true
 
+# Tracking Current Visual State
+var current_displayed_card_value: int = -1
+
 # Trump Card State
 var enemy_cash_out_and_pass_locked: bool = false
 var player_cash_out_and_pass_locked: bool = false
@@ -114,6 +117,11 @@ func animate_card_flip(new_card_value: int) -> void:
 	if not card_display:
 		return
 		
+	if new_card_value == current_displayed_card_value:
+		card_display.texture = get_card_texture(new_card_value)
+		return
+		
+	current_displayed_card_value = new_card_value
 	var tween = create_tween()
 	tween.tween_property(card_display, "scale:x", 0.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func():
@@ -122,6 +130,7 @@ func animate_card_flip(new_card_value: int) -> void:
 	tween.tween_property(card_display, "scale:x", 1.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func reset_game() -> void:
+	current_displayed_card_value = -1
 	if has_node("UI_Layer/Table/CardDisplay"):
 		var card_display = get_node("UI_Layer/Table/CardDisplay")
 		if card_display:
