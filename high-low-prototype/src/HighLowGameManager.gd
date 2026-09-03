@@ -39,7 +39,6 @@ var steal_trump = preload("res://src/trumps/SoulThievery.gd").new()
 var trumps_hand: Array = []
 
 # 3. @onready variables targeting exact relative paths
-@onready var base_card_label: Label = $UI_Layer/Table/BaseCardLabel
 @onready var combo_label: Label = $UI_Layer/Table/ComboLabel
 @onready var health_label: Label = $UI_Layer/Table/HealthLabel
 @onready var turn_label: Label = $UI_Layer/Table/turn
@@ -108,11 +107,26 @@ func get_card_back_texture() -> Texture2D:
 		return load(fallback_path) as Texture2D
 	return null
 
+func animate_card_flip(new_card_value: int) -> void:
+	if not has_node("UI_Layer/Table/CardDisplay"):
+		return
+	var card_display = get_node("UI_Layer/Table/CardDisplay")
+	if not card_display:
+		return
+		
+	var tween = create_tween()
+	tween.tween_property(card_display, "scale:x", 0.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func():
+		card_display.texture = get_card_texture(new_card_value)
+	)
+	tween.tween_property(card_display, "scale:x", 1.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
 func reset_game() -> void:
 	if has_node("UI_Layer/Table/CardDisplay"):
 		var card_display = get_node("UI_Layer/Table/CardDisplay")
 		if card_display:
 			card_display.texture = get_card_back_texture()
+			card_display.scale.x = 1.0
 
 	player_hp = player_max_health
 	enemy_hp = enemy_max_health
@@ -543,11 +557,7 @@ func _disable_all_controls() -> void:
 	steal_button.disabled = true
 
 func _update_base_card_ui() -> void:
-	base_card_label.text = str(active_card)
-	if has_node("UI_Layer/Table/CardDisplay"):
-		var card_display = get_node("UI_Layer/Table/CardDisplay")
-		if card_display:
-			card_display.texture = get_card_texture(active_card)
+	animate_card_flip(active_card)
 
 func _update_turn_label() -> void:
 	if turn_label:
