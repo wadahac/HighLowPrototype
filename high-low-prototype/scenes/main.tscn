@@ -4,19 +4,25 @@
 [ext_resource type="Script" uid="uid://bikflwn44ytxp" path="res://src/EnemyAI.gd" id="2_0wfyh"]
 [ext_resource type="Texture2D" uid="uid://dm5lou6we6swy" path="res://assets/cards/card_7.png" id="2_jyhfs"]
 [ext_resource type="Texture2D" uid="uid://dlf70ia2gimmb" path="res://assets/trumps/SoulThievery.png" id="2_sugp2"]
+[ext_resource type="Texture2D" uid="uid://cdhqbq2ht8wo6" path="res://assets/texture/table_bg.png" id="2_tbgi4"]
 
 [node name="Main" type="Node2D" unique_id=182343160]
 script = ExtResource("1_o5qli")
 
 [node name="UI_Layer" type="CanvasLayer" parent="." unique_id=1495939711]
 
-[node name="Background" type="ColorRect" parent="UI_Layer" unique_id=1932712271]
+[node name="Background" type="TextureRect" parent="UI_Layer" unique_id=1029146958]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -1.4367676
+offset_top = -1.0
+offset_right = 1.4367676
+offset_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 1)
+texture = ExtResource("2_tbgi4")
+expand_mode = 1
 
 [node name="Vignette" type="TextureRect" parent="UI_Layer" unique_id=1491990849]
 offset_right = 40.0
