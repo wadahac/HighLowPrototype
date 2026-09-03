@@ -388,6 +388,8 @@ func process_guess(is_higher: bool) -> void:
 	var is_correct: bool = false
 	var is_tie: bool = (new_card == active_card)
 	
+	var is_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
+	
 	if is_tie:
 		is_correct = true
 	elif is_higher and new_card > active_card:
@@ -399,6 +401,10 @@ func process_guess(is_higher: bool) -> void:
 		if not is_tie:
 			current_streak += 1
 			shared_pot += 1
+		if is_chained:
+			shared_pot *= 2
+			if status_label:
+				status_label.text = ("Player" if is_player_turn else "Enemy") + " survived Chains of Fate! Pot doubled to " + str(shared_pot) + "!"
 		active_card = new_card
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
@@ -416,6 +422,9 @@ func process_guess(is_higher: bool) -> void:
 				set_player_controls_enabled(true)
 	else:
 		var damage: int = max(1, shared_pot)
+		if is_chained:
+			damage = max(1, shared_pot * 2)
+			
 		var text_prefix = ""
 		if is_reshuffled:
 			text_prefix = "DECK RESHUFFLED! "
@@ -458,6 +467,13 @@ func process_guess(is_higher: bool) -> void:
 		if not check_game_over():
 			await get_tree().create_timer(1.2).timeout
 			switch_turn()
+
+	# Consume and reset Chains of Fate lock status after the guess is evaluated
+	if is_player_turn:
+		player_cash_out_and_pass_locked = false
+	else:
+		enemy_cash_out_and_pass_locked = false
+	chains_lock_duration = 0
 
 # Cash out logic
 func cash_out() -> void:
