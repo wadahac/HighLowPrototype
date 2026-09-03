@@ -249,10 +249,12 @@ func _on_cash_out_pressed() -> void:
 		cash_out()
 
 func _on_pass_pressed() -> void:
+	if is_player_turn and player_cash_out_and_pass_locked:
+		return
+	if not is_player_turn and enemy_cash_out_and_pass_locked:
+		return
+
 	if is_player_turn:
-		if player_cash_out_and_pass_locked:
-			print("Action locked by Chains of Fate")
-			return
 		set_player_controls_enabled(false)
 		if status_label:
 			status_label.text = "Player passed the turn."
@@ -400,7 +402,7 @@ func process_guess(is_higher: bool) -> void:
 	var is_correct: bool = false
 	var is_tie: bool = (new_card == active_card)
 	
-	var is_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
+	var was_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
 	
 	if is_tie:
 		is_correct = true
@@ -413,7 +415,7 @@ func process_guess(is_higher: bool) -> void:
 		if not is_tie:
 			current_streak += 1
 			shared_pot += 1
-		if is_chained:
+		if was_chained:
 			shared_pot *= 2
 			if status_label:
 				status_label.text = ("Player" if is_player_turn else "Enemy") + " survived Chains of Fate! Pot doubled to " + str(shared_pot) + "!"
@@ -434,7 +436,7 @@ func process_guess(is_higher: bool) -> void:
 				set_player_controls_enabled(true)
 	else:
 		var damage: int = max(1, shared_pot)
-		if is_chained:
+		if was_chained:
 			damage = max(1, shared_pot * 2)
 			
 		var text_prefix = ""
@@ -490,10 +492,8 @@ func process_guess(is_higher: bool) -> void:
 # Cash out logic
 func cash_out() -> void:
 	if is_player_turn and player_cash_out_and_pass_locked:
-		print("Action locked by Chains of Fate")
 		return
 	if not is_player_turn and enemy_cash_out_and_pass_locked:
-		print("Action locked by Chains of Fate")
 		return
 
 	if shared_pot > 0:
