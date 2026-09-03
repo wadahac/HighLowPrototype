@@ -63,6 +63,13 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	var higher_prob: float = float(higher_count) / float(max(1, total_remaining))
 	var lower_prob: float = float(lower_count) / float(max(1, total_remaining))
 
+	# --- FORCE AI DECISION LOCK ---
+	if manager.enemy_cash_out_and_pass_locked:
+		print("AI is CHAINED: Bypassing cash out/pass decisions. Forcing guess.")
+		var choose_higher = higher_prob >= lower_prob
+		manager.process_guess(choose_higher)
+		return
+
 	var best_choice: String = "higher"
 	var best_prob: float = higher_prob
 

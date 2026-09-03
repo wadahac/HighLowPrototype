@@ -246,11 +246,8 @@ func _on_cash_out_pressed() -> void:
 		cash_out()
 
 func _on_pass_pressed() -> void:
-	if is_player_turn and player_cash_out_and_pass_locked:
-		print("Player Cash Out/Pass blocked by Chains of Fate!")
-		return
-	if not is_player_turn and enemy_cash_out_and_pass_locked:
-		print("Enemy Cash Out/Pass blocked by Chains of Fate!")
+	if (is_player_turn and player_cash_out_and_pass_locked) or (not is_player_turn and enemy_cash_out_and_pass_locked):
+		print("ACTION BLOCKED: Pass called while locked by Chains of Fate!")
 		return
 
 	if is_player_turn:
@@ -390,8 +387,9 @@ func _on_enemy_decision_made(choice: String) -> void:
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
-	var was_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
-	var pot_before_guess: int = shared_pot
+	var active_is_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
+	var pot_snapshot: int = shared_pot
+	print("DEBUG - Guess Start: is_player_turn=", is_player_turn, " active_is_chained=", active_is_chained, " pot=", pot_snapshot)
 
 	var new_card: int = draw_card()
 	var is_reshuffled: bool = was_reshuffled_on_last_draw
@@ -409,9 +407,9 @@ func process_guess(is_higher: bool) -> void:
 		if not is_tie:
 			current_streak += 1
 			shared_pot += 1
-		if was_chained:
+		if active_is_chained:
 			shared_pot *= 2
-			print("Chained guess success! Doubled pot to: ", shared_pot)
+			print("DEBUG: Chains of Fate DOUBLE POT applied! New pot: ", shared_pot)
 			if status_label:
 				status_label.text = ("Player" if is_player_turn else "Enemy") + " survived Chains of Fate! Pot doubled to " + str(shared_pot) + "!"
 		active_card = new_card
@@ -430,10 +428,12 @@ func process_guess(is_higher: bool) -> void:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
 	else:
-		var base_dmg: int = max(1, pot_before_guess)
-		var total_dmg: int = base_dmg * 2 if was_chained else base_dmg
-		if was_chained:
-			print("Chained guess failed! Dealt double damage: ", total_dmg)
+		var total_damage: int = 0
+		if active_is_chained:
+			total_damage = max(1, pot_snapshot * 2)
+			print("DEBUG: Chains of Fate DOUBLE DAMAGE applied: ", total_damage)
+		else:
+			total_damage = max(1, pot_snapshot)
 			
 		var text_prefix = ""
 		if is_reshuffled:
@@ -441,28 +441,28 @@ func process_guess(is_higher: bool) -> void:
 			
 		if is_player_turn:
 			if mirror_active:
-				var reflected_damage = int(total_dmg * 0.5)
-				var self_damage = total_dmg - reflected_damage
+				var reflected_damage = int(total_damage * 0.5)
+				var self_damage = total_damage - reflected_damage
 				player_hp = max(0, player_hp - self_damage)
 				enemy_hp = max(0, enemy_hp - reflected_damage)
 				mirror_active = false
 				if status_label:
 					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				player_hp = max(0, player_hp - total_dmg)
+				player_hp = max(0, player_hp - total_damage)
 				if is_reshuffled and status_label:
 					status_label.text = text_prefix + "Player guessed incorrectly!"
 		else:
 			if mirror_active:
-				var reflected_damage = int(total_dmg * 0.5)
-				var self_damage = total_dmg - reflected_damage
+				var reflected_damage = int(total_damage * 0.5)
+				var self_damage = total_damage - reflected_damage
 				enemy_hp = max(0, enemy_hp - self_damage)
 				player_hp = max(0, player_hp - reflected_damage)
 				mirror_active = false
 				if status_label:
 					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
 			else:
-				enemy_hp = max(0, enemy_hp - total_dmg)
+				enemy_hp = max(0, enemy_hp - total_damage)
 				if is_reshuffled and status_label:
 					status_label.text = text_prefix + "Enemy guessed incorrectly!"
 			
@@ -479,19 +479,14 @@ func process_guess(is_higher: bool) -> void:
 			switch_turn()
 
 	# Consume and reset Chains of Fate lock status after the guess is evaluated
-	if is_player_turn:
-		player_cash_out_and_pass_locked = false
-	else:
-		enemy_cash_out_and_pass_locked = false
+	player_cash_out_and_pass_locked = false
+	enemy_cash_out_and_pass_locked = false
 	chains_lock_duration = 0
 
 # Cash out logic
 func cash_out() -> void:
-	if is_player_turn and player_cash_out_and_pass_locked:
-		print("Player Cash Out/Pass blocked by Chains of Fate!")
-		return
-	if not is_player_turn and enemy_cash_out_and_pass_locked:
-		print("Enemy Cash Out/Pass blocked by Chains of Fate!")
+	if (is_player_turn and player_cash_out_and_pass_locked) or (not is_player_turn and enemy_cash_out_and_pass_locked):
+		print("ACTION BLOCKED: Cash Out called while locked by Chains of Fate!")
 		return
 
 	if shared_pot > 0:
