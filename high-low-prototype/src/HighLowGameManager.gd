@@ -512,9 +512,6 @@ func switch_turn() -> void:
 	
 	if chains_lock_duration > 0:
 		chains_lock_duration -= 1
-		if chains_lock_duration == 0:
-			player_cash_out_and_pass_locked = false
-			enemy_cash_out_and_pass_locked = false
 	
 	if is_player_turn:
 		mirror_active = false
