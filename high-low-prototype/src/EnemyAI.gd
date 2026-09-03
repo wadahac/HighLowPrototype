@@ -77,14 +77,14 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 			best_choice = "lower"
 			best_prob = lower_prob
 
-	var is_bad_card: bool = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
-
-	# --- DEBUFF CHECK ---
-	if enemy_cash_out_and_pass_locked or manager.enemy_cash_out_and_pass_locked:
+	# --- DEBUFF CHECK (FORCE GUESSING IMMEDIATELY) ---
+	if manager.enemy_cash_out_and_pass_locked or manager.chains_lock_duration > 0 or enemy_cash_out_and_pass_locked:
 		if manager.status_label:
 			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
 		decision_made.emit(best_choice)
 		return
+
+	var is_bad_card: bool = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
 
 	# --- PROPHETIC VISION ADVANTAGE ---
 	if manager.prophetic_vision_turn_countdown == 0 and manager.known_future_3rd_card != -1:
