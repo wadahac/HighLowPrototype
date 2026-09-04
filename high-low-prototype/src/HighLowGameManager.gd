@@ -119,6 +119,23 @@ func get_trump_texture(icon_filename: String) -> Texture2D:
 	print("TRUMP ICON ERROR: Failed to load icon at ", path)
 	return null
 
+func apply_button_theme(btn: Button) -> void:
+	var bg_tex = get_trump_texture("card_back.png")
+	var frame_tex = get_trump_texture("ui_frame.png")
+	
+	if bg_tex != null:
+		var sb_normal = StyleBoxTexture.new()
+		sb_normal.texture = bg_tex
+		btn.add_theme_stylebox_override("normal", sb_normal)
+		btn.add_theme_stylebox_override("pressed", sb_normal)
+		
+	if frame_tex != null:
+		var sb_hover = StyleBoxTexture.new()
+		sb_hover.texture = frame_tex
+		btn.add_theme_stylebox_override("hover", sb_hover)
+		
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
 func animate_card_flip(new_card_value: int) -> void:
 	if not has_node("UI_Layer/Table/CardDisplay"):
 		return
@@ -306,9 +323,11 @@ func refresh_trump_ui() -> void:
 	_update_button_state(mirror_button, has_mirror, mirror_trump)
 	
 	if steal_button:
-		steal_button.custom_minimum_size = Vector2(64, 80)
+		steal_button.custom_minimum_size = Vector2(56, 56)
 		steal_button.visible = not steal_trump.is_used
 		steal_button.disabled = not is_player_turn
+		steal_button.flat = false
+		apply_button_theme(steal_button)
 		if not steal_trump.is_used:
 			var tex = get_trump_texture("SoulThievery.png")
 			if tex != null:
@@ -316,18 +335,18 @@ func refresh_trump_ui() -> void:
 				steal_button.expand_icon = true
 				steal_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 				steal_button.text = ""
-				steal_button.flat = true
 			else:
 				steal_button.icon = null
 				steal_button.text = "Steal"
-				steal_button.flat = false
 
 func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 	if not btn:
 		return
 	btn.visible = has_trump
 	btn.disabled = not is_player_turn
-	btn.custom_minimum_size = Vector2(64, 80)
+	btn.custom_minimum_size = Vector2(56, 56)
+	btn.flat = false
+	apply_button_theme(btn)
 	
 	# Clear old connections to prevent duplicate triggers
 	for conn in btn.pressed.get_connections():
@@ -356,11 +375,9 @@ func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 		btn.expand_icon = true
 		btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		btn.text = ""
-		btn.flat = true
 	else:
 		btn.icon = null
 		btn.text = display_name
-		btn.flat = false
 		
 	if has_trump:
 		# Reconnect to the specific handler
