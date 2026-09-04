@@ -128,38 +128,44 @@ layout_mode = 2
 text = "RESTART MATCH?"
 
 [node name="TrumpContainer" type="HBoxContainer" parent="UI_Layer" unique_id=1873544373]
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -241.0
+offset_top = -72.0
+offset_right = 241.0
+grow_horizontal = 2
+grow_vertical = 0
+size_flags_horizontal = 4
+size_flags_vertical = 8
 theme_override_constants/separation = 10
+alignment = 1
+metadata/_edit_group_ = true
 
 [node name="ChainsButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=733228219]
 layout_mode = 2
-text = "Chains of Fate"
 icon = ExtResource("4_choun")
 
 [node name="ExecutionerButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=504559150]
 layout_mode = 2
-text = "Executioner"
 icon = ExtResource("5_ya4ey")
 
 [node name="VisionButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=159625727]
 layout_mode = 2
-text = "Prophetic Vision"
 icon = ExtResource("6_eb6dy")
 
 [node name="SacrificeButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=2073240811]
 layout_mode = 2
-text = "Blood Sacrifice"
 icon = ExtResource("7_trceg")
 
 [node name="MirrorButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=1947791960]
 layout_mode = 2
-text = "Mirror Shard"
 icon = ExtResource("8_a8y0u")
 
 [node name="StealButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=721139577]
 layout_mode = 2
-text = "Steal Button"
 icon = ExtResource("2_sugp2")
 
 [node name="InfoPanel" type="VBoxContainer" parent="UI_Layer" unique_id=870315125]
