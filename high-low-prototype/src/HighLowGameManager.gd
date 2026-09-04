@@ -274,6 +274,9 @@ func refresh_trump_ui() -> void:
 	if not container:
 		return
 		
+	# Adjust Container Separation to accommodate larger buttons
+	container.add_theme_constant_override("separation", 10)
+		
 	# Check which types of trumps are currently active (not used) in the player's hand
 	var has_chains = false
 	var has_executioner = false
@@ -303,7 +306,7 @@ func refresh_trump_ui() -> void:
 	_update_button_state(mirror_button, has_mirror, mirror_trump)
 	
 	if steal_button:
-		steal_button.custom_minimum_size = Vector2(32, 44)
+		steal_button.custom_minimum_size = Vector2(64, 80)
 		steal_button.visible = not steal_trump.is_used
 		steal_button.disabled = not is_player_turn
 		if not steal_trump.is_used:
@@ -311,6 +314,7 @@ func refresh_trump_ui() -> void:
 			if tex != null:
 				steal_button.icon = tex
 				steal_button.expand_icon = true
+				steal_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 				steal_button.text = ""
 				steal_button.flat = true
 			else:
@@ -323,7 +327,7 @@ func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 		return
 	btn.visible = has_trump
 	btn.disabled = not is_player_turn
-	btn.custom_minimum_size = Vector2(32, 44)
+	btn.custom_minimum_size = Vector2(64, 80)
 	
 	# Clear old connections to prevent duplicate triggers
 	for conn in btn.pressed.get_connections():
@@ -350,6 +354,7 @@ func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 	if tex != null and has_trump:
 		btn.icon = tex
 		btn.expand_icon = true
+		btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		btn.text = ""
 		btn.flat = true
 	else:
