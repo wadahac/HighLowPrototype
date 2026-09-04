@@ -479,9 +479,13 @@ func process_guess(is_higher: bool) -> void:
 			switch_turn()
 
 	# Consume and reset Chains of Fate lock status after the guess is evaluated
-	player_cash_out_and_pass_locked = false
-	enemy_cash_out_and_pass_locked = false
-	chains_lock_duration = 0
+	if is_player_turn:
+		player_cash_out_and_pass_locked = false
+	else:
+		enemy_cash_out_and_pass_locked = false
+	
+	if not player_cash_out_and_pass_locked and not enemy_cash_out_and_pass_locked:
+		chains_lock_duration = 0
 
 # Cash out logic
 func cash_out() -> void:
@@ -509,9 +513,6 @@ func switch_turn() -> void:
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	refresh_trump_ui()
-	
-	if chains_lock_duration > 0:
-		chains_lock_duration -= 1
 	
 	if is_player_turn:
 		mirror_active = false

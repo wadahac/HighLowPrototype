@@ -67,7 +67,10 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	if manager.enemy_cash_out_and_pass_locked:
 		print("AI is CHAINED: Bypassing cash out/pass decisions. Forcing guess.")
 		var choose_higher = higher_prob >= lower_prob
-		manager.process_guess(choose_higher)
+		var forced_choice = "higher" if choose_higher else "lower"
+		if manager.status_label:
+			manager.status_label.text = "Enemy locked by Chains of Fate! Guesses %s!" % forced_choice.to_upper()
+		decision_made.emit(forced_choice)
 		return
 
 	var best_choice: String = "higher"
