@@ -78,12 +78,7 @@ func _ready() -> void:
 	pass_button.pressed.connect(_on_pass_pressed)
 	restart_button.pressed.connect(reset_game)
 	
-	# Connect Trump buttons
-	chains_button.pressed.connect(_on_chains_pressed)
-	executioner_button.pressed.connect(_on_executioner_pressed)
-	vision_button.pressed.connect(_on_vision_pressed)
-	sacrifice_button.pressed.connect(_on_sacrifice_pressed)
-	mirror_button.pressed.connect(_on_mirror_pressed)
+	# Connect Steal button
 	steal_button.pressed.connect(_on_steal_button_pressed)
 	
 	if enemy_ai:
@@ -288,6 +283,51 @@ func _on_pass_pressed() -> void:
 func update_trump_ui() -> void:
 	refresh_trump_ui()
 
+func _setup_base_button(btn: Button, trump_instance) -> void:
+	if not btn:
+		return
+	
+	# Clear old connections
+	for conn in btn.pressed.get_connections():
+		btn.pressed.disconnect(conn.callable)
+		
+	var is_available = (trump_instance in trumps_hand) and (not trump_instance.is_used)
+	btn.visible = is_available
+	btn.disabled = not is_player_turn
+	btn.custom_minimum_size = Vector2(56, 56)
+	btn.flat = false
+	apply_button_theme(btn)
+	
+	if is_available:
+		var file_name_lower = trump_instance.get_script().get_path().get_file().get_basename().to_lower()
+		var filename = ""
+		if "chains" in file_name_lower:
+			filename = "chains.png"
+		elif "executioner" in file_name_lower:
+			filename = "executioner.png"
+		elif "vision" in file_name_lower or "prophetic" in file_name_lower:
+			filename = "vision.png"
+		elif "sacrifice" in file_name_lower or "blood" in file_name_lower:
+			filename = "sacrifice.png"
+		elif "mirror" in file_name_lower:
+			filename = "mirror.png"
+			
+		var tex = get_trump_texture(filename) if filename != "" else null
+		if tex != null:
+			btn.icon = tex
+			btn.expand_icon = true
+			btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			btn.text = ""
+		else:
+			btn.icon = null
+			btn.text = trump_instance.card_name if "card_name" in trump_instance else btn.name
+			
+		btn.pressed.connect(func():
+			trump_instance.execute_player(self)
+			refresh_trump_ui()
+			set_player_controls_enabled(is_player_turn)
+		)
+
 func refresh_trump_ui() -> void:
 	var container = $UI_Layer/TrumpContainer
 	if not container:
@@ -301,34 +341,13 @@ func refresh_trump_ui() -> void:
 		
 	# Adjust Container Separation to accommodate larger buttons
 	container.add_theme_constant_override("separation", 10)
-		
-	# Check which types of trumps are currently active (not used) in the player's hand
-	var has_chains = false
-	var has_executioner = false
-	var has_vision = false
-	var has_sacrifice = false
-	var has_mirror = false
-	
-	for trump in trumps_hand:
-		if not trump.is_used:
-			var file_name = trump.get_script().get_path().get_file().get_basename().to_lower()
-			if "chainsoffate" in file_name or "chains" in file_name:
-				has_chains = true
-			elif "executioner" in file_name:
-				has_executioner = true
-			elif "propheticvision" in file_name or "vision" in file_name:
-				has_vision = true
-			elif "bloodsacrifice" in file_name or "sacrifice" in file_name:
-				has_sacrifice = true
-			elif "mirrorshard" in file_name or "mirror" in file_name:
-				has_mirror = true
 
-	# Update button visibilities and disabled states dynamically
-	_update_button_state(chains_button, has_chains, chains_trump)
-	_update_button_state(executioner_button, has_executioner, executioner_trump)
-	_update_button_state(vision_button, has_vision, vision_trump)
-	_update_button_state(sacrifice_button, has_sacrifice, sacrifice_trump)
-	_update_button_state(mirror_button, has_mirror, mirror_trump)
+	# Setup the 5 base buttons representing ONLY their original starting card instances
+	_setup_base_button(chains_button, chains_trump)
+	_setup_base_button(executioner_button, executioner_trump)
+	_setup_base_button(vision_button, vision_trump)
+	_setup_base_button(sacrifice_button, sacrifice_trump)
+	_setup_base_button(mirror_button, mirror_trump)
 	
 	if steal_button:
 		steal_button.custom_minimum_size = Vector2(56, 56)
@@ -393,85 +412,6 @@ func refresh_trump_ui() -> void:
 		cash_out_button.disabled = true
 		if status_label:
 			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
-
-func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
-	if not btn:
-		return
-	btn.visible = has_trump
-	btn.disabled = not is_player_turn
-	btn.custom_minimum_size = Vector2(56, 56)
-	btn.flat = false
-	apply_button_theme(btn)
-	
-	# Clear old connections to prevent duplicate triggers
-	for conn in btn.pressed.get_connections():
-		btn.pressed.disconnect(conn.callable)
-		
-	var display_name = default_trump.card_name if "card_name" in default_trump else btn.name
-	
-	# Map trump card types to exact filenames
-	var filename = ""
-	var file_name_lower = default_trump.get_script().get_path().get_file().get_basename().to_lower()
-	if "chains" in file_name_lower:
-		filename = "chains.png"
-	elif "executioner" in file_name_lower:
-		filename = "executioner.png"
-	elif "vision" in file_name_lower or "prophetic" in file_name_lower:
-		filename = "vision.png"
-	elif "sacrifice" in file_name_lower or "blood" in file_name_lower:
-		filename = "sacrifice.png"
-	elif "mirror" in file_name_lower:
-		filename = "mirror.png"
-		
-	var tex = get_trump_texture(filename) if filename != "" else null
-	
-	if tex != null and has_trump:
-		btn.icon = tex
-		btn.expand_icon = true
-		btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		btn.text = ""
-	else:
-		btn.icon = null
-		btn.text = display_name
-		
-	if has_trump:
-		# Reconnect to the specific handler
-		if btn == chains_button:
-			btn.pressed.connect(_on_chains_pressed)
-		elif btn == executioner_button:
-			btn.pressed.connect(_on_executioner_pressed)
-		elif btn == vision_button:
-			btn.pressed.connect(_on_vision_pressed)
-		elif btn == sacrifice_button:
-			btn.pressed.connect(_on_sacrifice_pressed)
-		elif btn == mirror_button:
-			btn.pressed.connect(_on_mirror_pressed)
-
-func _use_trump_type(type_name: String) -> void:
-	for trump in trumps_hand:
-		if not trump.is_used:
-			var file_name = trump.get_script().get_path().get_file().get_basename().to_lower()
-			if type_name in file_name:
-				trump.execute_player(self)
-				break
-	refresh_trump_ui()
-	set_player_controls_enabled(is_player_turn)
-
-# Trump Card Handlers
-func _on_chains_pressed() -> void:
-	_use_trump_type("chains")
-
-func _on_executioner_pressed() -> void:
-	_use_trump_type("executioner")
-
-func _on_vision_pressed() -> void:
-	_use_trump_type("vision")
-
-func _on_sacrifice_pressed() -> void:
-	_use_trump_type("sacrifice")
-
-func _on_mirror_pressed() -> void:
-	_use_trump_type("mirror")
 
 func _on_steal_button_pressed() -> void:
 	var stolen_trump = steal_trump.apply_effect(self, enemy_ai, self)
