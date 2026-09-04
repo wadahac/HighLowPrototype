@@ -22,6 +22,7 @@ var current_displayed_card_value: int = -1
 # Trump Card State
 var enemy_cash_out_and_pass_locked: bool = false
 var player_cash_out_and_pass_locked: bool = false
+var chained_target: String = ""
 var chains_lock_duration: int = 0
 var chains_locked_turns: int = 0
 var mirror_active: bool = false
@@ -170,6 +171,7 @@ func reset_game() -> void:
 	is_player_turn = true
 	enemy_cash_out_and_pass_locked = false
 	player_cash_out_and_pass_locked = false
+	chained_target = ""
 	chains_lock_duration = 0
 	chains_locked_turns = 0
 	mirror_active = false
@@ -272,7 +274,7 @@ func _on_cash_out_pressed() -> void:
 		cash_out()
 
 func _on_pass_pressed() -> void:
-	if (is_player_turn and player_cash_out_and_pass_locked) or (not is_player_turn and enemy_cash_out_and_pass_locked):
+	if (is_player_turn and chained_target == "player") or (not is_player_turn and chained_target == "enemy"):
 		print("ACTION BLOCKED: Pass called while locked by Chains of Fate!")
 		return
 
@@ -452,11 +454,11 @@ func _on_enemy_decision_made(choice: String) -> void:
 	
 	if not is_player_turn and player_hp > 0 and enemy_hp > 0:
 		if enemy_ai and enemy_ai.can_act:
-			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
+			enemy_ai.take_turn(active_card, shared_pot, player_hp, (chained_target == "enemy"))
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
-	var active_is_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
+	var active_is_chained: bool = (chained_target == "player") if is_player_turn else (chained_target == "enemy")
 	var pot_snapshot: int = shared_pot
 	print("DEBUG - Guess Start: is_player_turn=", is_player_turn, " active_is_chained=", active_is_chained, " pot=", pot_snapshot)
 
@@ -539,6 +541,12 @@ func process_guess(is_higher: bool) -> void:
 		current_streak = 0
 		active_card = new_card
 		
+		# Explicitly reset Chains of Fate on round end / damage
+		player_cash_out_and_pass_locked = false
+		enemy_cash_out_and_pass_locked = false
+		chained_target = ""
+		chains_lock_duration = 0
+		
 		health_changed.emit(player_hp, enemy_hp)
 		combo_updated.emit(shared_pot)
 		_update_base_card_ui()
@@ -549,16 +557,19 @@ func process_guess(is_higher: bool) -> void:
 
 	# Consume and reset Chains of Fate lock status after the guess is evaluated
 	if is_player_turn:
-		player_cash_out_and_pass_locked = false
+		if chained_target == "player":
+			player_cash_out_and_pass_locked = false
+			chained_target = ""
+			chains_lock_duration = 0
 	else:
-		enemy_cash_out_and_pass_locked = false
-	
-	if not player_cash_out_and_pass_locked and not enemy_cash_out_and_pass_locked:
-		chains_lock_duration = 0
+		if chained_target == "enemy":
+			enemy_cash_out_and_pass_locked = false
+			chained_target = ""
+			chains_lock_duration = 0
 
 # Cash out logic
 func cash_out() -> void:
-	if (is_player_turn and player_cash_out_and_pass_locked) or (not is_player_turn and enemy_cash_out_and_pass_locked):
+	if (is_player_turn and chained_target == "player") or (not is_player_turn and chained_target == "enemy"):
 		print("ACTION BLOCKED: Cash Out called while locked by Chains of Fate!")
 		return
 
@@ -586,7 +597,7 @@ func switch_turn() -> void:
 	if is_player_turn:
 		mirror_active = false
 		set_player_controls_enabled(true)
-		if player_cash_out_and_pass_locked and status_label:
+		if chained_target == "player" and status_label:
 			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
 	else:
 		set_player_controls_enabled(false)
@@ -599,7 +610,7 @@ func switch_turn() -> void:
 				enemy_ai.can_act = true
 			
 			if enemy_ai.can_act:
-				enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
+				enemy_ai.take_turn(active_card, shared_pot, player_hp, (chained_target == "enemy"))
 			else:
 				# If still frozen/cannot act, safely pass turn back to player to avoid hang
 				await get_tree().create_timer(1.0).timeout
@@ -610,8 +621,9 @@ func set_player_controls_enabled(enabled: bool) -> void:
 	lower_button.disabled = not enabled
 	
 	if enabled and is_player_turn:
-		cash_out_button.disabled = player_cash_out_and_pass_locked or shared_pot == 0
-		pass_button.disabled = player_cash_out_and_pass_locked
+		var is_player_chained = (chained_target == "player")
+		cash_out_button.disabled = is_player_chained or shared_pot == 0
+		pass_button.disabled = is_player_chained
 		
 		# Update Trump buttons state
 		refresh_trump_ui()
