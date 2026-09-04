@@ -130,6 +130,7 @@ text = "RESTART MATCH?"
 [node name="TrumpContainer" type="HBoxContainer" parent="UI_Layer" unique_id=1873544373]
 offset_right = 40.0
 offset_bottom = 40.0
+theme_override_constants/separation = 10
 
 [node name="ChainsButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=733228219]
 layout_mode = 2
