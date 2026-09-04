@@ -5,6 +5,11 @@
 [ext_resource type="Texture2D" uid="uid://dm5lou6we6swy" path="res://assets/cards/card_7.png" id="2_jyhfs"]
 [ext_resource type="Texture2D" uid="uid://dlf70ia2gimmb" path="res://assets/trumps/SoulThievery.png" id="2_sugp2"]
 [ext_resource type="Texture2D" uid="uid://cdhqbq2ht8wo6" path="res://assets/texture/table_bg.png" id="2_tbgi4"]
+[ext_resource type="Texture2D" uid="uid://7dcne7wgt7ud" path="res://assets/trumps/chains.png" id="4_choun"]
+[ext_resource type="Texture2D" uid="uid://b4upucfe18rbj" path="res://assets/trumps/executioner.png" id="5_ya4ey"]
+[ext_resource type="Texture2D" uid="uid://kt86ay18roy8" path="res://assets/trumps/vision.png" id="6_eb6dy"]
+[ext_resource type="Texture2D" uid="uid://cm2lbvfell5r2" path="res://assets/trumps/sacrifice.png" id="7_trceg"]
+[ext_resource type="Texture2D" uid="uid://l7rmiy3m7xdv" path="res://assets/trumps/mirror.png" id="8_a8y0u"]
 
 [node name="Main" type="Node2D" unique_id=182343160]
 script = ExtResource("1_o5qli")
@@ -129,26 +134,32 @@ offset_bottom = 40.0
 [node name="ChainsButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=733228219]
 layout_mode = 2
 text = "Chains of Fate"
+icon = ExtResource("4_choun")
 
 [node name="ExecutionerButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=504559150]
 layout_mode = 2
 text = "Executioner"
+icon = ExtResource("5_ya4ey")
 
 [node name="VisionButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=159625727]
 layout_mode = 2
 text = "Prophetic Vision"
+icon = ExtResource("6_eb6dy")
 
 [node name="SacrificeButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=2073240811]
 layout_mode = 2
 text = "Blood Sacrifice"
+icon = ExtResource("7_trceg")
 
 [node name="MirrorButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=1947791960]
 layout_mode = 2
 text = "Mirror Shard"
+icon = ExtResource("8_a8y0u")
 
-[node name="StealButton" type="TextureButton" parent="UI_Layer/TrumpContainer" unique_id=1536537628]
+[node name="StealButton" type="Button" parent="UI_Layer/TrumpContainer" unique_id=721139577]
 layout_mode = 2
-texture_normal = ExtResource("2_sugp2")
+text = "Steal Button"
+icon = ExtResource("2_sugp2")
 
 [node name="InfoPanel" type="VBoxContainer" parent="UI_Layer" unique_id=870315125]
 anchors_preset = 3
