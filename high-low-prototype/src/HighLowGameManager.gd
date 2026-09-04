@@ -293,6 +293,12 @@ func refresh_trump_ui() -> void:
 	if not container:
 		return
 		
+	# Clean up previously generated dynamic buttons inside TrumpContainer
+	for child in container.get_children():
+		if child.is_in_group("stolen_trump_button"):
+			container.remove_child(child)
+			child.queue_free()
+		
 	# Adjust Container Separation to accommodate larger buttons
 	container.add_theme_constant_override("separation", 10)
 		
@@ -341,364 +347,49 @@ func refresh_trump_ui() -> void:
 				steal_button.icon = null
 				steal_button.text = "Steal"
 
+	# Identify and Instantiate Stolen/Extra Trumps
+	var base_instances = [chains_trump, executioner_trump, vision_trump, sacrifice_trump, mirror_trump]
+	for trump in trumps_hand:
+		if trump not in base_instances and not trump.is_used:
+			var new_btn = Button.new()
+			new_btn.add_to_group("stolen_trump_button")
+			new_btn.custom_minimum_size = Vector2(56, 56)
+			new_btn.disabled = not is_player_turn
+			apply_button_theme(new_btn)
+			
+			var file_name_lower = trump.get_script().get_path().get_file().get_basename().to_lower()
+			var filename = ""
+			if "chains" in file_name_lower:
+				filename = "chains.png"
+			elif "executioner" in file_name_lower:
+				filename = "executioner.png"
+			elif "vision" in file_name_lower or "prophetic" in file_name_lower:
+				filename = "vision.png"
+			elif "sacrifice" in file_name_lower or "blood" in file_name_lower:
+				filename = "sacrifice.png"
+			elif "mirror" in file_name_lower:
+				filename = "mirror.png"
+				
+			var tex = get_trump_texture(filename) if filename != "" else null
+			if tex != null:
+				new_btn.icon = tex
+				new_btn.expand_icon = true
+				new_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				new_btn.text = ""
+			else:
+				new_btn.icon = null
+				new_btn.text = trump.card_name if "card_name" in trump else "Stolen"
+				
+			new_btn.pressed.connect(func():
+				trump.execute_player(self)
+				refresh_trump_ui()
+				set_player_controls_enabled(is_player_turn)
+			)
+			container.add_child(new_btn)
+
 	# Re-enforce active turn lock at the very end of UI refresh
 	if is_player_turn and player_cash_out_and_pass_locked:
 		pass_button.disabled = true
 		cash_out_button.disabled = true
 		if status_label:
 			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
-
-func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
-	if not btn:
-		return
-	btn.visible = has_trump
-	btn.disabled = not is_player_turn
-	btn.custom_minimum_size = Vector2(56, 56)
-	btn.flat = false
-	apply_button_theme(btn)
-	
-	# Clear old connections to prevent duplicate triggers
-	for conn in btn.pressed.get_connections():
-		btn.pressed.disconnect(conn.callable)
-		
-	var display_name = default_trump.card_name if "card_name" in default_trump else btn.name
-	
-	# Map trump card types to exact filenames
-	var filename = ""
-	var file_name_lower = default_trump.get_script().get_path().get_file().get_basename().to_lower()
-	if "chains" in file_name_lower:
-		filename = "chains.png"
-	elif "executioner" in file_name_lower:
-		filename = "executioner.png"
-	elif "vision" in file_name_lower or "prophetic" in file_name_lower:
-		filename = "vision.png"
-	elif "sacrifice" in file_name_lower or "blood" in file_name_lower:
-		filename = "sacrifice.png"
-	elif "mirror" in file_name_lower:
-		filename = "mirror.png"
-		
-	var tex = get_trump_texture(filename) if filename != "" else null
-	
-	if tex != null and has_trump:
-		btn.icon = tex
-		btn.expand_icon = true
-		btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		btn.text = ""
-	else:
-		btn.icon = null
-		btn.text = display_name
-		
-	if has_trump:
-		# Reconnect to the specific handler
-		if btn == chains_button:
-			btn.pressed.connect(_on_chains_pressed)
-		elif btn == executioner_button:
-			btn.pressed.connect(_on_executioner_pressed)
-		elif btn == vision_button:
-			btn.pressed.connect(_on_vision_pressed)
-		elif btn == sacrifice_button:
-			btn.pressed.connect(_on_sacrifice_pressed)
-		elif btn == mirror_button:
-			btn.pressed.connect(_on_mirror_pressed)
-
-func _use_trump_type(type_name: String) -> void:
-	for trump in trumps_hand:
-		if not trump.is_used:
-			var file_name = trump.get_script().get_path().get_file().get_basename().to_lower()
-			if type_name in file_name:
-				trump.execute_player(self)
-				break
-	refresh_trump_ui()
-	set_player_controls_enabled(is_player_turn)
-
-# Trump Card Handlers
-func _on_chains_pressed() -> void:
-	_use_trump_type("chains")
-
-func _on_executioner_pressed() -> void:
-	_use_trump_type("executioner")
-
-func _on_vision_pressed() -> void:
-	_use_trump_type("vision")
-
-func _on_sacrifice_pressed() -> void:
-	_use_trump_type("sacrifice")
-
-func _on_mirror_pressed() -> void:
-	_use_trump_type("mirror")
-
-func _on_steal_button_pressed() -> void:
-	var stolen_trump = steal_trump.apply_effect(self, enemy_ai, self)
-	if stolen_trump:
-		var card_name = stolen_trump.card_name if "card_name" in stolen_trump else stolen_trump.get_script().get_path().get_file().get_basename()
-		print("STOLE TRUMP: Stole ", card_name)
-		if status_label:
-			status_label.text = "Player stole " + card_name + "!"
-	else:
-		if status_label:
-			status_label.text = "Player tried to steal, but enemy has no Trumps!"
-	refresh_trump_ui()
-	_update_base_card_ui()
-
-func trigger_juice_effect(effect_name: String) -> void:
-	print("Juice effect triggered: ", effect_name)
-	if status_label:
-		status_label.text = "Juice effect: " + effect_name.to_upper()
-
-# AI Decision Handler
-func _on_enemy_decision_made(choice: String) -> void:
-	if is_player_turn:
-		return
-	
-	if choice == "cash_out":
-		cash_out()
-	elif choice == "pass":
-		if status_label:
-			status_label.text = "Enemy passed the turn."
-		switch_turn()
-	else:
-		process_guess(choice == "higher")
-
-# Process guess logic
-func process_guess(is_higher: bool) -> void:
-	var active_is_chained: bool = player_cash_out_and_pass_locked if is_player_turn else enemy_cash_out_and_pass_locked
-	var pot_snapshot: int = shared_pot
-	print("DEBUG - Guess Start: is_player_turn=", is_player_turn, " active_is_chained=", active_is_chained, " pot=", pot_snapshot)
-
-	var new_card: int = draw_card()
-	var is_reshuffled: bool = was_reshuffled_on_last_draw
-	var is_correct: bool = false
-	var is_tie: bool = (new_card == active_card)
-	
-	if is_tie:
-		is_correct = true
-	elif is_higher and new_card > active_card:
-		is_correct = true
-	elif not is_higher and new_card < active_card:
-		is_correct = true
-		
-	if is_correct:
-		if not is_tie:
-			current_streak += 1
-			shared_pot += 1
-		if active_is_chained:
-			shared_pot *= 2
-			print("DEBUG: Chains of Fate DOUBLE POT applied! New pot: ", shared_pot)
-			if status_label:
-				status_label.text = ("Player" if is_player_turn else "Enemy") + " survived Chains of Fate! Pot doubled to " + str(shared_pot) + "!"
-		active_card = new_card
-		combo_updated.emit(shared_pot)
-		_update_base_card_ui()
-		
-		if is_reshuffled and status_label:
-			var prefix = "Deck reshuffled! " if not status_label.text.begins_with("DECK RESHUFFLED!") else status_label.text + " | "
-			if is_player_turn:
-				status_label.text = prefix + "Player guessed correctly!"
-			else:
-				status_label.text = prefix + "Enemy guessed correctly!"
-
-		if not check_game_over():
-			if is_player_turn:
-				await get_tree().create_timer(1.2).timeout
-				set_player_controls_enabled(true)
-			else:
-				await get_tree().create_timer(1.2).timeout
-				if not check_game_over() and not is_player_turn:
-					if enemy_ai and enemy_ai.can_act:
-						enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
-	else:
-		var total_damage: int = 0
-		if active_is_chained:
-			total_damage = max(1, pot_snapshot * 2)
-			print("DEBUG: Chains of Fate DOUBLE DAMAGE applied: ", total_damage)
-		else:
-			total_damage = max(1, pot_snapshot)
-			
-		var text_prefix = ""
-		if is_reshuffled:
-			text_prefix = "DECK RESHUFFLED! "
-			
-		if is_player_turn:
-			if mirror_active:
-				var reflected_damage = int(total_damage * 0.5)
-				var self_damage = total_damage - reflected_damage
-				player_hp = max(0, player_hp - self_damage)
-				enemy_hp = max(0, enemy_hp - reflected_damage)
-				mirror_active = false
-				if status_label:
-					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
-			else:
-				player_hp = max(0, player_hp - total_damage)
-				if is_reshuffled and status_label:
-					status_label.text = text_prefix + "Player guessed incorrectly!"
-		else:
-			if mirror_active:
-				var reflected_damage = int(total_damage * 0.5)
-				var self_damage = total_damage - reflected_damage
-				enemy_hp = max(0, enemy_hp - self_damage)
-				player_hp = max(0, player_hp - reflected_damage)
-				mirror_active = false
-				if status_label:
-					status_label.text = text_prefix + "Mirror Shard reflected " + str(reflected_damage) + " damage!"
-			else:
-				enemy_hp = max(0, enemy_hp - total_damage)
-				if is_reshuffled and status_label:
-					status_label.text = text_prefix + "Enemy guessed incorrectly!"
-			
-		shared_pot = 0
-		current_streak = 0
-		active_card = new_card
-		
-		# Explicitly reset Chains of Fate on round end / damage
-		player_cash_out_and_pass_locked = false
-		enemy_cash_out_and_pass_locked = false
-		chained_target = ""
-		chains_lock_duration = 0
-		
-		health_changed.emit(player_hp, enemy_hp)
-		combo_updated.emit(shared_pot)
-		_update_base_card_ui()
-		
-		if not check_game_over():
-			await get_tree().create_timer(1.2).timeout
-			switch_turn()
-
-	# Consume and reset Chains of Fate lock status after the guess is evaluated
-	if is_player_turn:
-		if chained_target == "player":
-			player_cash_out_and_pass_locked = false
-			chained_target = ""
-			chains_lock_duration = 0
-	else:
-		if chained_target == "enemy":
-			enemy_cash_out_and_pass_locked = false
-			chained_target = ""
-			chains_lock_duration = 0
-
-# Cash out logic
-func cash_out() -> void:
-	if (is_player_turn and player_cash_out_and_pass_locked) or (not is_player_turn and enemy_cash_out_and_pass_locked):
-		print("ACTION BLOCKED: Cash Out called while locked by Chains of Fate!")
-		return
-
-	if shared_pot > 0:
-		if is_player_turn:
-			enemy_hp = max(0, enemy_hp - shared_pot)
-		else:
-			player_hp = max(0, player_hp - shared_pot)
-		shared_pot = 0
-		current_streak = 0
-		
-		health_changed.emit(player_hp, enemy_hp)
-		combo_updated.emit(shared_pot)
-		_update_base_card_ui()
-		
-		if not check_game_over():
-			await get_tree().create_timer(1.2).timeout
-			switch_turn()
-
-func switch_turn() -> void:
-	is_player_turn = not is_player_turn
-	_update_turn_label()
-	refresh_trump_ui()
-	
-	if is_player_turn:
-		mirror_active = false
-		set_player_controls_enabled(true)
-		if player_cash_out_and_pass_locked and status_label:
-			status_label.text = "TRAPPED BY CHAINS OF FATE: YOU MUST GUESS!"
-	else:
-		set_player_controls_enabled(false)
-		
-		if enemy_ai:
-			# Decrement turns_frozen counter
-			if enemy_ai.turns_frozen > 0:
-				enemy_ai.turns_frozen -= 1
-			if enemy_ai.turns_frozen <= 0:
-				enemy_ai.can_act = true
-			
-			if enemy_ai.can_act:
-				enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
-			else:
-				# If still frozen/cannot act, safely pass turn back to player to avoid hang
-				await get_tree().create_timer(1.0).timeout
-				switch_turn()
-
-func set_player_controls_enabled(enabled: bool) -> void:
-	higher_button.disabled = not enabled
-	lower_button.disabled = not enabled
-	
-	if enabled and is_player_turn:
-		var is_player_chained = player_cash_out_and_pass_locked
-		cash_out_button.disabled = is_player_chained or shared_pot == 0
-		pass_button.disabled = is_player_chained
-		
-		# Update Trump buttons state
-		refresh_trump_ui()
-	else:
-		cash_out_button.disabled = true
-		pass_button.disabled = true
-		chains_button.disabled = true
-		executioner_button.disabled = true
-		vision_button.disabled = true
-		sacrifice_button.disabled = true
-		mirror_button.disabled = true
-		steal_button.disabled = true
-
-func check_game_over() -> bool:
-	if enemy_hp <= 0:
-		if status_label:
-			status_label.text = "YOU SURVIVED! YOU WIN!"
-		_disable_all_controls()
-		restart_button.show()
-		restart_button.disabled = false
-		game_over.emit("Player")
-		return true
-	elif player_hp <= 0:
-		if status_label:
-			status_label.text = "YOU DIED! GAME OVER"
-		_disable_all_controls()
-		restart_button.show()
-		restart_button.disabled = false
-		game_over.emit("Enemy")
-		return true
-	return false
-
-func check_game_state() -> bool:
-	return check_game_over()
-
-func _disable_all_controls() -> void:
-	set_player_controls_enabled(false)
-	higher_button.disabled = true
-	lower_button.disabled = true
-	cash_out_button.disabled = true
-	pass_button.disabled = true
-	chains_button.disabled = true
-	executioner_button.disabled = true
-	vision_button.disabled = true
-	sacrifice_button.disabled = true
-	mirror_button.disabled = true
-	steal_button.disabled = true
-
-func _update_base_card_ui() -> void:
-	animate_card_flip(active_card)
-
-func _update_turn_label() -> void:
-	if turn_label:
-		if is_player_turn:
-			turn_label.text = "YOUR TURN"
-		else:
-			turn_label.text = "ENEMY TURN"
-
-func _on_health_changed(p_hp: int, e_hp: int) -> void:
-	if health_label:
-		health_label.text = "Player HP: " + str(p_hp) + " | Enemy HP: " + str(e_hp)
-
-func _on_combo_updated(c_combo: int) -> void:
-	if combo_label:
-		combo_label.text = "Shared Pot: " + str(c_combo)
-
-func _on_game_over(winner: String) -> void:
-	_disable_all_controls()
-	restart_button.show()
-	restart_button.disabled = false
