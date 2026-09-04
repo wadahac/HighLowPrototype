@@ -112,8 +112,11 @@ func get_card_back_texture() -> Texture2D:
 
 func get_trump_texture(icon_filename: String) -> Texture2D:
 	var path = "res://assets/trumps/" + icon_filename
-	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
+	if FileAccess.file_exists(path) or ResourceLoader.exists(path):
+		var tex = load(path) as Texture2D
+		if tex:
+			return tex
+	print("TRUMP ICON ERROR: Failed to load icon at ", path)
 	return null
 
 func animate_card_flip(new_card_value: int) -> void:
@@ -300,6 +303,7 @@ func refresh_trump_ui() -> void:
 	_update_button_state(mirror_button, has_mirror, mirror_trump)
 	
 	if steal_button:
+		steal_button.custom_minimum_size = Vector2(32, 44)
 		steal_button.visible = not steal_trump.is_used
 		steal_button.disabled = not is_player_turn
 		if not steal_trump.is_used:
@@ -319,6 +323,7 @@ func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 		return
 	btn.visible = has_trump
 	btn.disabled = not is_player_turn
+	btn.custom_minimum_size = Vector2(32, 44)
 	
 	# Clear old connections to prevent duplicate triggers
 	for conn in btn.pressed.get_connections():
