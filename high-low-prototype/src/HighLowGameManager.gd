@@ -111,12 +111,9 @@ func get_card_back_texture() -> Texture2D:
 	return null
 
 func get_trump_texture(icon_filename: String) -> Texture2D:
-	var path = "res://high-low-prototype/assets/trumps/" + icon_filename
+	var path = "res://assets/trumps/" + icon_filename
 	if ResourceLoader.exists(path):
 		return load(path) as Texture2D
-	var alt_path = "res://assets/trumps/" + icon_filename
-	if ResourceLoader.exists(alt_path):
-		return load(alt_path) as Texture2D
 	return null
 
 func animate_card_flip(new_card_value: int) -> void:
@@ -307,7 +304,7 @@ func refresh_trump_ui() -> void:
 		steal_button.disabled = not is_player_turn
 		if not steal_trump.is_used:
 			var tex = get_trump_texture("SoulThievery.png")
-			if tex:
+			if tex != null:
 				steal_button.icon = tex
 				steal_button.expand_icon = true
 				steal_button.text = ""
