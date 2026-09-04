@@ -458,10 +458,6 @@ func _on_enemy_decision_made(choice: String) -> void:
 		switch_turn()
 	else:
 		process_guess(choice == "higher")
-	
-	if not is_player_turn and player_hp > 0 and enemy_hp > 0:
-		if enemy_ai and enemy_ai.can_act:
-			enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 
 # Process guess logic
 func process_guess(is_higher: bool) -> void:
@@ -505,6 +501,11 @@ func process_guess(is_higher: bool) -> void:
 			if is_player_turn:
 				await get_tree().create_timer(1.2).timeout
 				set_player_controls_enabled(true)
+			else:
+				await get_tree().create_timer(1.2).timeout
+				if not check_game_over() and not is_player_turn:
+					if enemy_ai and enemy_ai.can_act:
+						enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 	else:
 		var total_damage: int = 0
 		if active_is_chained:

@@ -10,6 +10,9 @@ var vision_active: bool = false
 var can_act: bool = true
 var turns_frozen: int = 0
 
+# Execution guard
+var is_thinking: bool = false
+
 # Enemy single-use Trump card instances
 var chains_trump = preload("res://src/trumps/ChainsOfFate.gd").new()
 var executioner_trump = preload("res://src/trumps/Executioner.gd").new()
@@ -34,16 +37,22 @@ func reset_trumps() -> void:
 	vision_active = false
 	can_act = true
 	turns_frozen = 0
+	is_thinking = false
 
 func record_card_drawn(card_value: int) -> void:
 	used_cards.append(card_value)
 
 func take_turn(current_card_value: int, current_stake: int, player_hp: int, enemy_cash_out_and_pass_locked: bool) -> void:
+	if is_thinking:
+		return
+	is_thinking = true
+
 	# Random delay between 1.0 and 3.0 seconds
 	await get_tree().create_timer(randf_range(1.0, 3.0)).timeout
 	
 	var manager = get_parent()
 	if not manager:
+		is_thinking = false
 		return
 
 	current_card_value = manager.active_card
@@ -70,6 +79,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 		var forced_choice = "higher" if choose_higher else "lower"
 		if manager.status_label:
 			manager.status_label.text = "Enemy locked by Chains of Fate! Guesses %s!" % forced_choice.to_upper()
+		is_thinking = false
 		decision_made.emit(forced_choice)
 		return
 
@@ -91,6 +101,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	if manager.enemy_cash_out_and_pass_locked or manager.chains_lock_duration > 0 or enemy_cash_out_and_pass_locked:
 		if manager.status_label:
 			manager.status_label.text = "Enemy locked by Chains of Fate! Calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
+		is_thinking = false
 		decision_made.emit(best_choice)
 		return
 
@@ -108,6 +119,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 		if manager.status_label:
 			manager.status_label.text = "Enemy uses Prophetic Vision foresight (100%% win rate) and guesses %s!" % vision_choice.to_upper()
 		manager.known_future_3rd_card = -1
+		is_thinking = false
 		decision_made.emit(vision_choice)
 		return
 
@@ -116,6 +128,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	if current_stake >= player_hp and current_stake > 0:
 		if manager.status_label:
 			manager.status_label.text = "Enemy sees lethal cash-out! Cashes out to win!"
+		is_thinking = false
 		decision_made.emit("cash_out")
 		return
 
@@ -126,14 +139,41 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 			chains_trump.execute_enemy(manager, self)
 			if manager.status_label:
 				manager.status_label.text = "Enemy plays Chains of Fate and PASSES on a risky %d!" % current_card_value
+			is_thinking = false
 			decision_made.emit("pass")
 			return
 
 		# Blood Sacrifice to replace bad active card
 		if not sacrifice_trump.is_used and manager.enemy_hp > 4 and sacrifice_trump.can_enemy_use(manager, self):
 			sacrifice_trump.execute_enemy(manager, self)
-			take_turn(manager.active_card, manager.shared_pot, manager.player_hp, enemy_cash_out_and_pass_locked)
-			return
+			# Update local variables to match the newly drawn card and continue execution
+			current_card_value = manager.active_card
+			current_stake = manager.shared_pot
+			
+			higher_count = 0
+			lower_count = 0
+			total_remaining = manager.deck.size()
+			for card in manager.deck:
+				if card > current_card_value:
+					higher_count += 1
+				elif card < current_card_value:
+					lower_count += 1
+			higher_prob = float(higher_count) / float(max(1, total_remaining))
+			lower_prob = float(lower_count) / float(max(1, total_remaining))
+			
+			best_choice = "higher"
+			best_prob = higher_prob
+			if lower_prob > higher_prob:
+				best_choice = "lower"
+				best_prob = lower_prob
+			elif lower_prob == higher_prob:
+				if current_card_value <= 7:
+					best_choice = "higher"
+					best_prob = higher_prob
+				else:
+					best_choice = "lower"
+					best_prob = lower_prob
+			is_bad_card = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
 
 		# Mirror Shard protection before taking a risky guess
 		if not mirror_trump.is_used and mirror_trump.can_enemy_use(manager, self):
@@ -143,6 +183,7 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 		if current_stake >= 4:
 			if manager.status_label:
 				manager.status_label.text = "Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake
+			is_thinking = false
 			decision_made.emit("cash_out")
 			return
 
@@ -157,4 +198,5 @@ func take_turn(current_card_value: int, current_stake: int, player_hp: int, enem
 	# --- FINAL DECISION EMISSION ---
 	if manager.status_label:
 		manager.status_label.text = "Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
+	is_thinking = false
 	decision_made.emit(best_choice)
