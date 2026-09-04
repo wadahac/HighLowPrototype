@@ -110,6 +110,15 @@ func get_card_back_texture() -> Texture2D:
 		return load(fallback_path) as Texture2D
 	return null
 
+func get_trump_texture(icon_filename: String) -> Texture2D:
+	var path = "res://high-low-prototype/assets/trumps/" + icon_filename
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	var alt_path = "res://assets/trumps/" + icon_filename
+	if ResourceLoader.exists(alt_path):
+		return load(alt_path) as Texture2D
+	return null
+
 func animate_card_flip(new_card_value: int) -> void:
 	if not has_node("UI_Layer/Table/CardDisplay"):
 		return
@@ -296,6 +305,17 @@ func refresh_trump_ui() -> void:
 	if steal_button:
 		steal_button.visible = not steal_trump.is_used
 		steal_button.disabled = not is_player_turn
+		if not steal_trump.is_used:
+			var tex = get_trump_texture("SoulThievery.png")
+			if tex:
+				steal_button.icon = tex
+				steal_button.expand_icon = true
+				steal_button.text = ""
+				steal_button.flat = true
+			else:
+				steal_button.icon = null
+				steal_button.text = "Steal"
+				steal_button.flat = false
 
 func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 	if not btn:
@@ -307,10 +327,35 @@ func _update_button_state(btn: Button, has_trump: bool, default_trump) -> void:
 	for conn in btn.pressed.get_connections():
 		btn.pressed.disconnect(conn.callable)
 		
-	if has_trump:
-		var display_name = default_trump.card_name if "card_name" in default_trump else btn.name
-		btn.text = display_name
+	var display_name = default_trump.card_name if "card_name" in default_trump else btn.name
+	
+	# Map trump card types to exact filenames
+	var filename = ""
+	var file_name_lower = default_trump.get_script().get_path().get_file().get_basename().to_lower()
+	if "chains" in file_name_lower:
+		filename = "chains.png"
+	elif "executioner" in file_name_lower:
+		filename = "executioner.png"
+	elif "vision" in file_name_lower or "prophetic" in file_name_lower:
+		filename = "vision.png"
+	elif "sacrifice" in file_name_lower or "blood" in file_name_lower:
+		filename = "sacrifice.png"
+	elif "mirror" in file_name_lower:
+		filename = "mirror.png"
 		
+	var tex = get_trump_texture(filename) if filename != "" else null
+	
+	if tex != null and has_trump:
+		btn.icon = tex
+		btn.expand_icon = true
+		btn.text = ""
+		btn.flat = true
+	else:
+		btn.icon = null
+		btn.text = display_name
+		btn.flat = false
+		
+	if has_trump:
 		# Reconnect to the specific handler
 		if btn == chains_button:
 			btn.pressed.connect(_on_chains_pressed)
