@@ -7,6 +7,7 @@ func execute_player(game_manager) -> void:
 		return
 
 	is_used = true
+	AudioManager.play_sfx("trump_sacrifice")
 	game_manager.player_hp = max(0, game_manager.player_hp - 2)
 	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
 	var new_card = game_manager.replace_active_card()
@@ -23,6 +24,7 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 		return
 
 	is_used = true
+	AudioManager.play_sfx("trump_sacrifice")
 	game_manager.enemy_hp = max(0, game_manager.enemy_hp - 2)
 	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
 	var new_card = game_manager.replace_active_card()

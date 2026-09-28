@@ -2,6 +2,7 @@ extends "res://src/trumps/TrumpCard.gd"
 
 func execute_player(game_manager) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_executioner")
 	var dmg = int(game_manager.shared_pot * 0.5)
 	game_manager.enemy_hp = max(0, game_manager.enemy_hp - dmg)
 	game_manager.shared_pot -= dmg
@@ -12,6 +13,7 @@ func execute_player(game_manager) -> void:
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_executioner")
 	var dmg = int(game_manager.shared_pot * 0.5)
 	game_manager.player_hp = max(0, game_manager.player_hp - dmg)
 	game_manager.shared_pot -= dmg

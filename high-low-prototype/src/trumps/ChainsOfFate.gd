@@ -2,6 +2,7 @@ extends "res://src/trumps/TrumpCard.gd"
 
 func execute_player(game_manager) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_chains")
 	game_manager.enemy_cash_out_and_pass_locked = true
 	game_manager.chained_target = "enemy"
 	game_manager.chains_lock_duration = 1
@@ -10,6 +11,7 @@ func execute_player(game_manager) -> void:
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_chains")
 	game_manager.player_cash_out_and_pass_locked = true
 	game_manager.chained_target = "player"
 	game_manager.chains_lock_duration = 1

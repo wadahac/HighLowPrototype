@@ -2,6 +2,7 @@ extends "res://src/trumps/TrumpCard.gd"
 
 func apply_effect(user, target, game_manager) -> Variant:
 	is_used = true
+	AudioManager.play_sfx("trump_thievery")
 	var stolen_card = null
 	if target and "trumps_hand" in target and not target.trumps_hand.is_empty():
 		# Prefer stealing an unused trump card if available

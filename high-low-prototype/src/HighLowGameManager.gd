@@ -147,6 +147,7 @@ func animate_card_flip(new_card_value: int) -> void:
 	var tween = create_tween()
 	tween.tween_property(card_display, "scale:x", 0.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func():
+		AudioManager.play_sfx("card_place")
 		card_display.texture = get_card_texture(new_card_value)
 	)
 	tween.tween_property(card_display, "scale:x", 1.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -255,11 +256,13 @@ func replace_active_card() -> int:
 # Button handlers
 func _on_higher_pressed() -> void:
 	if is_player_turn:
+		AudioManager.play_sfx("click")
 		set_player_controls_enabled(false)
 		process_guess(true)
 
 func _on_lower_pressed() -> void:
 	if is_player_turn:
+		AudioManager.play_sfx("click")
 		set_player_controls_enabled(false)
 		process_guess(false)
 
@@ -274,6 +277,7 @@ func _on_pass_pressed() -> void:
 		return
 
 	if is_player_turn:
+		AudioManager.play_sfx("click")
 		set_player_controls_enabled(false)
 		if status_label:
 			status_label.text = "Player passed the turn."
@@ -493,6 +497,8 @@ func process_guess(is_higher: bool) -> void:
 					if enemy_ai and enemy_ai.can_act:
 						enemy_ai.take_turn(active_card, shared_pot, player_hp, enemy_cash_out_and_pass_locked)
 	else:
+		AudioManager.play_sfx("take_damage")
+		
 		var total_damage: int = 0
 		if active_is_chained:
 			total_damage = max(1, pot_snapshot * 2)
@@ -568,6 +574,8 @@ func cash_out() -> void:
 		return
 
 	if shared_pot > 0:
+		AudioManager.play_sfx("cash_out")
+		AudioManager.play_sfx("take_damage")
 		if is_player_turn:
 			enemy_hp = max(0, enemy_hp - shared_pot)
 		else:
@@ -584,6 +592,7 @@ func cash_out() -> void:
 			switch_turn()
 
 func switch_turn() -> void:
+	AudioManager.play_sfx("switch_turn")
 	is_player_turn = not is_player_turn
 	_update_turn_label()
 	refresh_trump_ui()
@@ -641,6 +650,7 @@ func check_game_over() -> bool:
 		game_over.emit("Player")
 		return true
 	elif player_hp <= 0:
+		AudioManager.play_sfx("game_over")
 		if status_label:
 			status_label.text = "YOU DIED! GAME OVER"
 		_disable_all_controls()

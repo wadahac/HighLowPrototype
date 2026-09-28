@@ -2,11 +2,13 @@ extends "res://src/trumps/TrumpCard.gd"
 
 func execute_player(game_manager) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_mirror")
 	game_manager.mirror_active = true
 	game_manager.status_label.text = "Player activated Mirror Shard! Backfire damage will be reflected."
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_mirror")
 	game_manager.mirror_active = true
 	game_manager.status_label.text = "Enemy activated Mirror Shard!"
 

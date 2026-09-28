@@ -2,6 +2,7 @@ extends "res://src/trumps/TrumpCard.gd"
 
 func execute_player(game_manager) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_vision")
 	if game_manager.deck.size() < 3:
 		game_manager.rebuild_and_reshuffle_deck()
 		
@@ -19,6 +20,7 @@ func execute_player(game_manager) -> void:
 
 func execute_enemy(game_manager, enemy_ai) -> void:
 	is_used = true
+	AudioManager.play_sfx("trump_vision")
 	if game_manager.deck.size() < 3:
 		game_manager.rebuild_and_reshuffle_deck()
 		
