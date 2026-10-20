@@ -663,6 +663,8 @@ func check_game_over() -> bool:
 func check_game_state() -> bool:
 	return check_game_over()
 
+
+
 func _disable_all_controls() -> void:
 	set_player_controls_enabled(false)
 	higher_button.disabled = true
