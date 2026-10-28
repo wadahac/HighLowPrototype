@@ -3,6 +3,9 @@ class_name TrumpCard
 
 var is_used: bool = false
 
+func can_activate(game_manager) -> bool:
+	return not is_used and game_manager != null and not game_manager.is_game_over
+
 func execute_player(_game_manager) -> void:
 	pass
 
