@@ -126,12 +126,12 @@ func take_turn() -> void:
 		manager.known_future_3rd_card = -1
 		manager.prophetic_vision_turn_countdown = -1
 		manager.vision_owner = ""
+		manager.refresh_vision_label()
 
 	# If the AI knows the exact next card, take the guaranteed guess before
 	# spending any other trumps.
 	if vision_choice != "":
-		if manager.status_label:
-			manager.status_label.text = "Enemy uses Prophetic Vision foresight (100% win rate) and guesses " + vision_choice.to_upper() + "!"
+		manager.set_status("Enemy uses Prophetic Vision foresight (100% win rate) and guesses " + vision_choice.to_upper() + "!", "bad")
 		_finish_and_emit(serial, vision_choice)
 		return
 
@@ -140,8 +140,7 @@ func take_turn() -> void:
 	if not manager.enemy_cash_out_and_pass_locked \
 			and current_stake >= manager.player_hp \
 			and current_stake > 0:
-		if manager.status_label:
-			manager.status_label.text = "Enemy sees lethal cash-out! Cashes out to win!"
+		manager.set_status("Enemy sees lethal cash-out! Cashes out to win!", "bad")
 		_finish_and_emit(serial, "cash_out")
 		return
 
@@ -159,16 +158,14 @@ func take_turn() -> void:
 				_finish_turn(serial)
 				return
 			used_trump = true
-			if manager.status_label:
-				manager.status_label.text = "Enemy plays Chains of Fate and PASSES on a risky %d!" % current_card_value
+			manager.set_status("Enemy plays Chains of Fate and PASSES on a risky %d!" % current_card_value, "chain")
 			_finish_and_emit(serial, "pass")
 			return
 
 		# Cash out to protect existing pot BEFORE spending Blood Sacrifice.
 		# Cash out is illegal while chained, so the AI must still guess then.
 		if not manager.enemy_cash_out_and_pass_locked and current_stake >= 4:
-			if manager.status_label:
-				manager.status_label.text = "Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake
+			manager.set_status("Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake, "warn")
 			_finish_and_emit(serial, "cash_out")
 			return
 
@@ -234,9 +231,8 @@ func take_turn() -> void:
 			used_trump = true
 
 	# --- FINAL DECISION EMISSION ---
-	if manager.status_label:
-		if manager.enemy_cash_out_and_pass_locked:
-			manager.status_label.text = "Enemy is chained and cannot cash out or pass. Guesses %s!" % best_choice.to_upper()
-		elif not used_trump:
-			manager.status_label.text = "Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()]
+	if manager.enemy_cash_out_and_pass_locked:
+		manager.set_status("Enemy is chained and cannot cash out or pass. Guesses %s!" % best_choice.to_upper(), "chain")
+	elif not used_trump:
+		manager.set_status("Enemy calculates %d%% win rate and guesses %s!" % [int(best_prob * 100), best_choice.to_upper()], "muted")
 	_finish_and_emit(serial, best_choice)

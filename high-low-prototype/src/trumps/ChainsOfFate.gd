@@ -4,8 +4,7 @@ func execute_player(game_manager) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.enemy_cash_out_and_pass_locked:
-		if game_manager.status_label:
-			game_manager.status_label.text = "Enemy is already chained by Chains of Fate!"
+		game_manager.set_status("Enemy is already chained by Chains of Fate!", "warn")
 		return
 
 	is_used = true
@@ -13,15 +12,14 @@ func execute_player(game_manager) -> void:
 	game_manager.enemy_cash_out_and_pass_locked = true
 	game_manager.chained_target = "enemy"
 	print("DEBUG - Chains Applied by Player: enemy_cash_out_and_pass_locked = ", game_manager.enemy_cash_out_and_pass_locked)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Player activated Chains of Fate! Enemy cannot cash out or pass next turn."
+	game_manager.set_status("Player activated Chains of Fate! Enemy cannot cash out or pass next turn.", "chain")
+	game_manager.refresh_effect_badges()
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.player_cash_out_and_pass_locked:
-		if game_manager.status_label:
-			game_manager.status_label.text = "Player is already chained by Chains of Fate!"
+		game_manager.set_status("Player is already chained by Chains of Fate!", "warn")
 		return
 
 	is_used = true
@@ -29,8 +27,8 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 	game_manager.player_cash_out_and_pass_locked = true
 	game_manager.chained_target = "player"
 	print("DEBUG - Chains Applied by Enemy: player_cash_out_and_pass_locked = ", game_manager.player_cash_out_and_pass_locked)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Enemy activated Chains of Fate! Player cannot cash out or pass next turn."
+	game_manager.set_status("Enemy activated Chains of Fate! Player cannot cash out or pass next turn.", "chain")
+	game_manager.refresh_effect_badges()
 
 func can_enemy_use(game_manager, enemy_ai) -> bool:
 	if not can_activate(game_manager):

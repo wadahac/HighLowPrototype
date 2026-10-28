@@ -4,8 +4,7 @@ func execute_player(game_manager) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.shared_pot < 2:
-		if game_manager.status_label:
-			game_manager.status_label.text = "Executioner needs at least 2 in the pot!"
+		game_manager.set_status("Executioner needs at least 2 in the pot!", "warn")
 		return
 
 	is_used = true
@@ -15,8 +14,7 @@ func execute_player(game_manager) -> void:
 	game_manager.shared_pot -= dmg
 	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
 	game_manager.combo_updated.emit(game_manager.shared_pot)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Player activated Executioner! Dealt " + str(dmg) + " damage!"
+	game_manager.set_status("Player activated Executioner! Dealt " + str(dmg) + " damage!", "good")
 	game_manager.check_game_state()
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
@@ -32,8 +30,7 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 	game_manager.shared_pot -= dmg
 	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
 	game_manager.combo_updated.emit(game_manager.shared_pot)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Enemy activated Executioner! Dealt " + str(dmg) + " damage!"
+	game_manager.set_status("Enemy activated Executioner! Dealt " + str(dmg) + " damage!", "bad")
 	game_manager.check_game_state()
 
 func can_enemy_use(game_manager, enemy_ai) -> bool:

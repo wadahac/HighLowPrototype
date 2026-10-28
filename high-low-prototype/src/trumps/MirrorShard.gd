@@ -4,16 +4,15 @@ func execute_player(game_manager) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.mirror_active:
-		if game_manager.status_label:
-			game_manager.status_label.text = "Mirror Shard is already active!"
+		game_manager.set_status("Mirror Shard is already active!", "warn")
 		return
 
 	is_used = true
 	AudioManager.play_sfx("trump_mirror")
 	game_manager.mirror_active = true
 	game_manager.mirror_owner = "player"
-	if game_manager.status_label:
-		game_manager.status_label.text = "Player activated Mirror Shard! Backfire damage will be reflected."
+	game_manager.set_status("Player activated Mirror Shard! Backfire damage will be reflected.", "good")
+	game_manager.refresh_effect_badges()
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	if not can_activate(game_manager):
@@ -27,8 +26,8 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 	AudioManager.play_sfx("trump_mirror")
 	game_manager.mirror_active = true
 	game_manager.mirror_owner = "enemy"
-	if game_manager.status_label:
-		game_manager.status_label.text = "Enemy activated Mirror Shard!"
+	game_manager.set_status("Enemy activated Mirror Shard!", "bad")
+	game_manager.refresh_effect_badges()
 
 func can_enemy_use(game_manager, enemy_ai) -> bool:
 	if not can_activate(game_manager):

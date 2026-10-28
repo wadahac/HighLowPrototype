@@ -11,6 +11,70 @@
 [ext_resource type="Texture2D" uid="uid://cm2lbvfell5r2" path="res://assets/trumps/sacrifice.png" id="7_trceg"]
 [ext_resource type="Texture2D" uid="uid://l7rmiy3m7xdv" path="res://assets/trumps/mirror.png" id="8_a8y0u"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chains"]
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+bg_color = Color(0.301961, 0.141176, 0.082353, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.94902, 0.560784, 0.219608, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mirror"]
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+bg_color = Color(0.05098, 0.176471, 0.270588, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.85098, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vision"]
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+bg_color = Color(0.180392, 0.101961, 0.278431, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.780392, 0.6, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_thinking"]
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+bg_color = Color(0.101961, 0.109804, 0.129412, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.54902, 0.6, 0.678431, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [node name="Main" type="Node2D" unique_id=182343160]
 script = ExtResource("1_o5qli")
 
@@ -56,6 +120,9 @@ offset_top = 16.0
 offset_right = 200.0
 offset_bottom = 44.0
 grow_horizontal = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 20
 text = "Shared Pot: 0"
 horizontal_alignment = 1
@@ -66,6 +133,9 @@ offset_left = 24.0
 offset_top = 16.0
 offset_right = 384.0
 offset_bottom = 44.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 20
 text = "Player HP: 10 | Enemy HP: 10"
 
@@ -78,6 +148,9 @@ offset_top = 16.0
 offset_right = -24.0
 offset_bottom = 44.0
 grow_horizontal = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 20
 text = "YOUR TURN"
 horizontal_alignment = 2
@@ -98,6 +171,78 @@ pivot_offset = Vector2(156, 156)
 texture = ExtResource("2_jyhfs")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="EffectBar" type="HBoxContainer" parent="UI_Layer"]
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -420.0
+offset_top = 54.0
+offset_right = 420.0
+offset_bottom = 90.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="ChainsBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]
+visible = false
+layout_mode = 2
+tooltip_text = "Chains of Fate: the chained side cannot cash out or pass and must guess. Correct guesses double the pot; wrong guesses double the damage."
+theme_override_styles/panel = SubResource("StyleBoxFlat_chains")
+
+[node name="ChainsLabel" type="Label" parent="UI_Layer/EffectBar/ChainsBadge"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.55, 1)
+theme_override_font_sizes/font_size = 16
+text = "CHAINS"
+vertical_alignment = 1
+
+[node name="MirrorBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]
+visible = false
+layout_mode = 2
+tooltip_text = "Mirror Shard: reflects half of the next backfire damage, rounded down. It expires when the turn changes."
+theme_override_styles/panel = SubResource("StyleBoxFlat_mirror")
+
+[node name="MirrorLabel" type="Label" parent="UI_Layer/EffectBar/MirrorBadge"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "MIRROR"
+vertical_alignment = 1
+
+[node name="VisionBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]
+visible = false
+layout_mode = 2
+tooltip_text = "Prophetic Vision: reveals the third card in the deck. It expires when that card is drawn or the deck reshuffles."
+theme_override_styles/panel = SubResource("StyleBoxFlat_vision")
+
+[node name="VisionBadgeLabel" type="Label" parent="UI_Layer/EffectBar/VisionBadge"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.78, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "VISION"
+vertical_alignment = 1
+
+[node name="ThinkingBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]
+visible = false
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+tooltip_text = "The enemy is choosing a guess."
+theme_override_styles/panel = SubResource("StyleBoxFlat_thinking")
+
+[node name="ThinkingLabel" type="Label" parent="UI_Layer/EffectBar/ThinkingBadge"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.82, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "ENEMY THINKING"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ButtonsContainer" type="HBoxContainer" parent="UI_Layer" unique_id=519503482]
 layout_mode = 1
@@ -223,16 +368,31 @@ theme_override_constants/separation = 4
 
 [node name="VisionLabel" type="Label" parent="UI_Layer/InfoPanel" unique_id=1782982449]
 layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 18
 horizontal_alignment = 1
 autowrap_mode = 2
 
 [node name="StatusLabel" type="Label" parent="UI_Layer/InfoPanel" unique_id=1254886002]
 layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 18
 text = "Your Turn"
 horizontal_alignment = 1
 autowrap_mode = 2
+
+[node name="FloatingTextLayer" type="Control" parent="UI_Layer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="EnemyAI" type="Node" parent="." unique_id=2133039468]
 script = ExtResource("2_0wfyh")

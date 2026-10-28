@@ -7,8 +7,7 @@ func execute_player(game_manager) -> void:
 	if not can_activate(game_manager):
 		return
 	if _vision_is_already_active(game_manager):
-		if game_manager.status_label:
-			game_manager.status_label.text = "A Prophetic Vision is already active!"
+		game_manager.set_status("A Prophetic Vision is already active!", "warn")
 		return
 
 	if game_manager.deck.size() < 3:
@@ -26,8 +25,7 @@ func execute_player(game_manager) -> void:
 	game_manager.refresh_vision_label()
 
 	var card_str: String = game_manager.get_card_name(third_card)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Prophetic Vision activated! 3rd card in the future is: " + card_str
+	game_manager.set_status("Prophetic Vision activated! 3rd card in the future is: " + card_str, "good")
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	if not can_activate(game_manager):
@@ -48,13 +46,12 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 	game_manager.prophetic_vision_turn_countdown = 3
 	game_manager.vision_owner = "enemy"
 
-	# The enemy's vision is hidden from the player.
-	if game_manager.vision_label:
-		game_manager.vision_label.text = ""
+	# The enemy's vision is hidden from the player, but its active state is
+	# still shown as a generic badge.
+	game_manager.refresh_vision_label()
 
 	var card_str: String = game_manager.get_card_name(third_card)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Enemy activated Prophetic Vision! 3rd card in the future is: " + card_str
+	game_manager.set_status("Enemy activated Prophetic Vision! 3rd card in the future is: " + card_str, "bad")
 
 func can_enemy_use(game_manager, enemy_ai) -> bool:
 	if not can_activate(game_manager):

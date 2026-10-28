@@ -4,8 +4,7 @@ func execute_player(game_manager) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.player_hp <= 2:
-		if game_manager.status_label:
-			game_manager.status_label.text = "Not enough HP to sacrifice!"
+		game_manager.set_status("Not enough HP to sacrifice!", "warn")
 		return
 
 	is_used = true
@@ -15,8 +14,7 @@ func execute_player(game_manager) -> void:
 	var new_card: int = game_manager.replace_active_card()
 
 	var card_str: String = game_manager.get_card_name(new_card)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Blood Sacrifice activated! Sacrificed 2 HP and drew a new card: " + card_str
+	game_manager.set_status("Blood Sacrifice activated! Sacrificed 2 HP and drew a new card: " + card_str, "warn")
 
 	game_manager.check_game_state()
 
@@ -33,8 +31,7 @@ func execute_enemy(game_manager, _enemy_ai) -> void:
 	var new_card: int = game_manager.replace_active_card()
 
 	var card_str: String = game_manager.get_card_name(new_card)
-	if game_manager.status_label:
-		game_manager.status_label.text = "Enemy activated Blood Sacrifice! Sacrificed 2 HP and drew a new card: " + card_str
+	game_manager.set_status("Enemy activated Blood Sacrifice! Sacrificed 2 HP and drew a new card: " + card_str, "bad")
 
 	game_manager.check_game_state()
 

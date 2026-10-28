@@ -4,8 +4,7 @@ func apply_effect(user, target, game_manager) -> Variant:
 	if not can_activate(game_manager):
 		return null
 	if not target or not ("trumps_hand" in target) or target.trumps_hand.is_empty():
-		if game_manager.status_label:
-			game_manager.status_label.text = "No enemy Trumps available to steal!"
+		game_manager.set_status("No enemy Trumps available to steal!", "warn")
 		return null
 
 	# Prefer stealing an unused trump card if available
