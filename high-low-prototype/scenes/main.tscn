@@ -27,6 +27,22 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_executioner"]
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+bg_color = Color(0.25098, 0.0509804, 0.0627451, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.94902, 0.247059, 0.219608, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mirror"]
 content_margin_left = 12.0
 content_margin_top = 5.0
@@ -198,6 +214,20 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.82, 0.55, 1)
 theme_override_font_sizes/font_size = 16
 text = "CHAINS"
+vertical_alignment = 1
+
+[node name="ExecutionerBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]
+visible = false
+layout_mode = 2
+tooltip_text = "Executioner's Sentence: sealed damage / switches remaining. Every point of damage the sentence owner takes from an enemy cash out reduces the sentence 1:1. When the countdown ends, the sealed damage strikes the sentenced side."
+theme_override_styles/panel = SubResource("StyleBoxFlat_executioner")
+
+[node name="ExecutionerLabel" type="Label" parent="UI_Layer/EffectBar/ExecutionerBadge"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.74902, 0.698039, 1)
+theme_override_font_sizes/font_size = 16
+text = "SENTENCE"
 vertical_alignment = 1
 
 [node name="MirrorBadge" type="PanelContainer" parent="UI_Layer/EffectBar"]

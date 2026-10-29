@@ -6,37 +6,34 @@ func execute_player(game_manager) -> void:
 	if game_manager.shared_pot < 2:
 		game_manager.set_status("Executioner needs at least 2 in the pot!", "warn")
 		return
+	if game_manager.executioner_sentence_turns > 0:
+		game_manager.set_status("An Executioner's Sentence is already active!", "warn")
+		return
 
 	is_used = true
 	AudioManager.play_sfx("trump_executioner")
-	var dmg: int = int(game_manager.shared_pot * 0.5)
-	game_manager.enemy_hp = max(0, game_manager.enemy_hp - dmg)
-	game_manager.shared_pot -= dmg
-	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
-	game_manager.combo_updated.emit(game_manager.shared_pot)
-	game_manager.set_status("Player activated Executioner! Dealt " + str(dmg) + " damage!", "good")
-	game_manager.check_game_state()
+	game_manager.start_executioner_sentence("player")
 
 func execute_enemy(game_manager, _enemy_ai) -> void:
 	if not can_activate(game_manager):
 		return
 	if game_manager.shared_pot < 2:
 		return
+	if game_manager.executioner_sentence_turns > 0:
+		return
 
 	is_used = true
 	AudioManager.play_sfx("trump_executioner")
-	var dmg: int = int(game_manager.shared_pot * 0.5)
-	game_manager.player_hp = max(0, game_manager.player_hp - dmg)
-	game_manager.shared_pot -= dmg
-	game_manager.health_changed.emit(game_manager.player_hp, game_manager.enemy_hp)
-	game_manager.combo_updated.emit(game_manager.shared_pot)
-	game_manager.set_status("Enemy activated Executioner! Dealt " + str(dmg) + " damage!", "bad")
-	game_manager.check_game_state()
+	game_manager.start_executioner_sentence("enemy")
 
 func can_enemy_use(game_manager, enemy_ai) -> bool:
 	if not can_activate(game_manager):
 		return false
 	if not enemy_ai or not (self in enemy_ai.trumps_hand):
 		return false
-	# Activate if shared pot >= 4
-	return game_manager.shared_pot >= 4
+	if game_manager.executioner_sentence_turns > 0:
+		return false
+	if game_manager.shared_pot < 2:
+		return false
+	# Seal a meaningful pot, or set up a lethal sentence against a low-HP player.
+	return game_manager.shared_pot >= 4 or game_manager.shared_pot >= game_manager.player_hp

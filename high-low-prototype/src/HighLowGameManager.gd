@@ -43,6 +43,12 @@ var known_future_3rd_card: int = -1
 var prophetic_vision_turn_countdown: int = -1
 var vision_owner: String = ""
 
+# Executioner's Sentence: the sealed pot strikes after a turn-switch countdown.
+# Enemy cash-outs against the sentence owner shave the sealed damage 1:1.
+var executioner_sentence_damage: int = 0
+var executioner_sentence_turns: int = 0
+var executioner_sentence_owner: String = ""
+
 const CARD_NAMES: Array[String] = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
 const STATUS_COLORS: Dictionary = {
@@ -58,7 +64,7 @@ const CONTROL_DIM_COLOR: Color = Color(0.62, 0.62, 0.62, 0.78)
 
 const TRUMP_HELP: Dictionary = {
 	"Chains of Fate": "Target cannot cash out or pass next turn and must guess. Correct guesses double the pot; wrong guesses double the damage.",
-	"Executioner": "Deal half the current pot as damage. The pot shrinks by the damage dealt.",
+	"Executioner": "Seal the pot. After 4 turn switches, the enemy takes the sealed damage. Enemy cash-outs against you reduce it 1:1. You keep your turn.",
 	"Prophetic Vision": "Reveal the third card in the deck. Lasts until it is drawn or the deck reshuffles.",
 	"Blood Sacrifice": "Lose 2 HP and replace the active card with a fresh draw.",
 	"Mirror Shard": "Reflects half of the next backfire damage, rounded down. Expires when the turn changes.",
@@ -104,6 +110,8 @@ var trumps_hand: Array = []
 @onready var effect_bar: HBoxContainer = $UI_Layer/EffectBar
 @onready var chains_badge: PanelContainer = $UI_Layer/EffectBar/ChainsBadge
 @onready var chains_badge_label: Label = $UI_Layer/EffectBar/ChainsBadge/ChainsLabel
+@onready var executioner_badge: PanelContainer = $UI_Layer/EffectBar/ExecutionerBadge
+@onready var executioner_badge_label: Label = $UI_Layer/EffectBar/ExecutionerBadge/ExecutionerLabel
 @onready var mirror_badge: PanelContainer = $UI_Layer/EffectBar/MirrorBadge
 @onready var mirror_badge_label: Label = $UI_Layer/EffectBar/MirrorBadge/MirrorLabel
 @onready var vision_badge: PanelContainer = $UI_Layer/EffectBar/VisionBadge
@@ -252,6 +260,9 @@ func reset_game() -> void:
 	known_future_3rd_card = -1
 	prophetic_vision_turn_countdown = -1
 	vision_owner = ""
+	executioner_sentence_damage = 0
+	executioner_sentence_turns = 0
+	executioner_sentence_owner = ""
 	was_reshuffled_on_last_draw = false
 	
 	chains_trump.is_used = false
@@ -364,6 +375,81 @@ func refresh_vision_label() -> void:
 func refresh_effect_badges() -> void:
 	_refresh_effect_badges()
 
+func start_executioner_sentence(owner: String) -> void:
+	if executioner_sentence_turns > 0:
+		set_status("An Executioner's Sentence is already active!", "warn")
+		return
+	if shared_pot < 2:
+		set_status("Executioner needs at least 2 in the pot!", "warn")
+		return
+
+	var sealed_damage: int = shared_pot
+	executioner_sentence_damage = sealed_damage
+	executioner_sentence_turns = 4
+	executioner_sentence_owner = owner
+	shared_pot = 0
+
+	combo_updated.emit(shared_pot)
+	_refresh_effect_badges()
+
+	var target_is_player: bool = owner == "enemy"
+	_spawn_floating_text("SENTENCED: " + str(sealed_damage), _health_feedback_center(target_is_player), STATUS_COLORS["bad"])
+	if target_is_player:
+		set_status("Enemy activated Executioner! You are sentenced to " + str(sealed_damage) + " damage in 4 switches.", "bad")
+	else:
+		set_status("Player activated Executioner! Enemy is sentenced to " + str(sealed_damage) + " damage in 4 switches.", "good")
+
+func _weaken_executioner_sentence(damage: int, damaged_side: String) -> String:
+	if executioner_sentence_turns <= 0 or executioner_sentence_owner != damaged_side:
+		return ""
+	if damage <= 0:
+		return ""
+
+	var before: int = executioner_sentence_damage
+	executioner_sentence_damage = max(0, executioner_sentence_damage - damage)
+	var reduced: int = before - executioner_sentence_damage
+	if reduced <= 0:
+		return ""
+
+	if executioner_sentence_damage == 0:
+		executioner_sentence_turns = 0
+		executioner_sentence_owner = ""
+		return " SENTENCE DEFUSED!"
+
+	return " Sentence weakened by " + str(reduced) + " to " + str(executioner_sentence_damage) + "."
+
+func _tick_executioner_sentence() -> bool:
+	if executioner_sentence_turns <= 0:
+		return false
+
+	executioner_sentence_turns -= 1
+	if executioner_sentence_turns > 0:
+		_refresh_effect_badges()
+		return false
+
+	var sealed_damage: int = executioner_sentence_damage
+	var target_is_player: bool = executioner_sentence_owner == "enemy"
+	executioner_sentence_damage = 0
+	executioner_sentence_turns = 0
+	executioner_sentence_owner = ""
+
+	if sealed_damage <= 0:
+		_refresh_effect_badges()
+		return false
+
+	AudioManager.play_sfx("take_damage")
+	if target_is_player:
+		player_hp = max(0, player_hp - sealed_damage)
+	else:
+		enemy_hp = max(0, enemy_hp - sealed_damage)
+
+	health_changed.emit(player_hp, enemy_hp)
+	_refresh_effect_badges()
+	set_status("THE SENTENCE IS CARRIED OUT! " \
+		+ ("You take " if target_is_player else "Enemy takes ") \
+		+ str(sealed_damage) + " damage!", "bad" if target_is_player else "good")
+	return check_game_over()
+
 func set_status(message: String, tone: String = "info") -> void:
 	if not status_label:
 		return
@@ -397,7 +483,12 @@ func _refresh_effect_badges() -> void:
 	if not effect_bar:
 		return
 
+	var previous_executioner_text: String = ""
+	if executioner_badge_label:
+		previous_executioner_text = executioner_badge_label.text
+
 	var chains_text := ""
+	var executioner_text := ""
 	var mirror_text := ""
 	var vision_text := ""
 
@@ -408,6 +499,17 @@ func _refresh_effect_badges() -> void:
 			chains_text = "CHAINS: YOU"
 		elif enemy_cash_out_and_pass_locked:
 			chains_text = "CHAINS: ENEMY"
+
+		if executioner_sentence_turns > 0:
+			var sentence_progress: String = str(executioner_sentence_damage)
+			if executioner_sentence_turns == 1:
+				sentence_progress += " / LAST"
+			else:
+				sentence_progress += " / " + str(executioner_sentence_turns)
+			if executioner_sentence_owner == "enemy":
+				executioner_text = "SENTENCED: " + sentence_progress
+			else:
+				executioner_text = "SENTENCE: " + sentence_progress
 
 		if mirror_active:
 			mirror_text = "MIRROR: YOU" if mirror_owner == "player" else "MIRROR: ENEMY"
@@ -422,8 +524,14 @@ func _refresh_effect_badges() -> void:
 				vision_text = "VISION: ENEMY"
 
 	var chains_visible: bool = _set_effect_badge(chains_badge, chains_badge_label, chains_text)
+	var executioner_visible: bool = _set_effect_badge(executioner_badge, executioner_badge_label, executioner_text)
 	var mirror_visible: bool = _set_effect_badge(mirror_badge, mirror_badge_label, mirror_text)
 	var vision_visible: bool = _set_effect_badge(vision_badge, vision_badge_label, vision_text)
+
+	if executioner_visible and executioner_badge_label \
+			and previous_executioner_text != "" \
+			and executioner_text != previous_executioner_text:
+		_pulse_label(executioner_badge_label, null)
 
 	var thinking_visible: bool = not is_game_over and not is_player_turn
 	if thinking_badge:
@@ -433,7 +541,7 @@ func _refresh_effect_badges() -> void:
 		if thinking_visible:
 			_update_thinking_text()
 
-	effect_bar.visible = chains_visible or mirror_visible or vision_visible or thinking_visible
+	effect_bar.visible = chains_visible or executioner_visible or mirror_visible or vision_visible or thinking_visible
 
 func _set_control_state(button: Button, enabled: bool) -> void:
 	if not button:
@@ -477,6 +585,8 @@ func _reset_feedback_animations() -> void:
 		combo_label.scale = Vector2.ONE
 	if turn_label:
 		turn_label.scale = Vector2.ONE
+	if executioner_badge_label:
+		executioner_badge_label.scale = Vector2.ONE
 	_clear_floating_texts()
 
 func _card_feedback_center() -> Vector2:
@@ -843,6 +953,8 @@ func cash_out() -> void:
 	var started_match: int = match_id
 	var acting_name: String = "Player" if is_player_turn else "Enemy"
 	var damage: int = shared_pot
+	var target_hp_before: int = enemy_hp if is_player_turn else player_hp
+	var actual_damage: int = min(damage, target_hp_before)
 	AudioManager.play_sfx("cash_out")
 	AudioManager.play_sfx("take_damage")
 	if is_player_turn:
@@ -851,11 +963,19 @@ func cash_out() -> void:
 		player_hp = max(0, player_hp - damage)
 	shared_pot = 0
 
-	set_status(acting_name + " cashed out for " + str(damage) + " damage!", "good" if is_player_turn else "bad")
+	# The sentence is tied to the sentence owner's blood: damage from the
+	# opponent's cash out shaves the sealed damage 1:1.
+	var sentence_note: String = ""
+	if executioner_sentence_turns > 0:
+		var damaged_side: String = "enemy" if is_player_turn else "player"
+		sentence_note = _weaken_executioner_sentence(actual_damage, damaged_side)
+
+	set_status(acting_name + " cashed out for " + str(damage) + " damage!" + sentence_note, "good" if is_player_turn else "bad")
 
 	health_changed.emit(player_hp, enemy_hp)
 	combo_updated.emit(shared_pot)
 	_update_base_card_ui()
+	_refresh_effect_badges()
 
 	if check_game_over():
 		return
@@ -875,6 +995,9 @@ func switch_turn() -> void:
 	mirror_owner = ""
 
 	_update_turn_label()
+	if _tick_executioner_sentence():
+		return
+
 	refresh_trump_ui()
 	
 	if is_player_turn:

@@ -78,6 +78,8 @@ func take_turn() -> void:
 
 	var current_card_value: int = manager.active_card
 	var current_stake: int = manager.shared_pot
+	var sentence_targeting_enemy: bool = manager.executioner_sentence_turns > 0 \
+		and manager.executioner_sentence_owner == "player"
 
 	# --- EXACT PROBABILITY CALCULATION (CARD COUNTING) ---
 	var higher_count: int = 0
@@ -144,6 +146,16 @@ func take_turn() -> void:
 		_finish_and_emit(serial, "cash_out")
 		return
 
+	# If the enemy is sentenced, its final turn before the blade falls is a
+	# free cash-out: the damage both hurts the player and shaves the sentence.
+	if sentence_targeting_enemy \
+			and manager.executioner_sentence_turns == 1 \
+			and current_stake > 0 \
+			and not manager.enemy_cash_out_and_pass_locked:
+		manager.set_status("Enemy cashes out %d to weaken the Executioner's sentence!" % current_stake, "bad")
+		_finish_and_emit(serial, "cash_out")
+		return
+
 	var is_bad_card: bool = (current_card_value in [5, 6, 7, 8]) or (best_prob < 0.60)
 	var used_trump: bool = false
 
@@ -163,9 +175,14 @@ func take_turn() -> void:
 			return
 
 		# Cash out to protect existing pot BEFORE spending Blood Sacrifice.
-		# Cash out is illegal while chained, so the AI must still guess then.
-		if not manager.enemy_cash_out_and_pass_locked and current_stake >= 4:
-			manager.set_status("Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake, "warn")
+		# While sentenced, the enemy will cash out a smaller pot because the
+		# damage also shaves the Executioner's sentence.
+		var cashout_threshold: int = 2 if sentence_targeting_enemy else 4
+		if not manager.enemy_cash_out_and_pass_locked and current_stake >= cashout_threshold:
+			if sentence_targeting_enemy:
+				manager.set_status("Enemy cashes out %d to weaken the Executioner's sentence!" % current_stake, "warn")
+			else:
+				manager.set_status("Enemy plays safe on a bad card and cashes out pot of %d!" % current_stake, "warn")
 			_finish_and_emit(serial, "cash_out")
 			return
 
@@ -216,7 +233,7 @@ func take_turn() -> void:
 
 	# Offensive Trumps for Good Cards / High Win %
 	if best_prob >= 0.60:
-		if _is_trump_available(executioner_trump) and current_stake >= 3 and executioner_trump.can_enemy_use(manager, self):
+		if _is_trump_available(executioner_trump) and executioner_trump.can_enemy_use(manager, self):
 			executioner_trump.execute_enemy(manager, self)
 			if manager.is_game_over:
 				_finish_turn(serial)
